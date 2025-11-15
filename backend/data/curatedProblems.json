@@ -1,0 +1,867 @@
+[
+  {
+    "problemNumber": "217",
+    "problemTitle": "Contains Duplicate",
+    "problemSlug": "contains-duplicate",
+    "difficulty": "Easy",
+    "topics": ["Arrays & Hashing"],
+    "prerequisites": [],
+    "learningOrder": 1
+  },
+  {
+    "problemNumber": "242",
+    "problemTitle": "Valid Anagram",
+    "problemSlug": "valid-anagram",
+    "difficulty": "Easy",
+    "topics": ["Arrays & Hashing"],
+    "prerequisites": ["217"],
+    "learningOrder": 2
+  },
+  {
+    "problemNumber": "1",
+    "problemTitle": "Two Sum",
+    "problemSlug": "two-sum",
+    "difficulty": "Easy",
+    "topics": ["Arrays & Hashing"],
+    "prerequisites": ["217", "242"],
+    "learningOrder": 3
+  },
+  {
+    "problemNumber": "49",
+    "problemTitle": "Group Anagrams",
+    "problemSlug": "group-anagrams",
+    "difficulty": "Medium",
+    "topics": ["Arrays & Hashing"],
+    "prerequisites": ["1"],
+    "learningOrder": 4
+  },
+  {
+    "problemNumber": "347",
+    "problemTitle": "Top K Frequent Elements",
+    "problemSlug": "top-k-frequent-elements",
+    "difficulty": "Medium",
+    "topics": ["Arrays & Hashing"],
+    "prerequisites": ["1", "49"],
+    "learningOrder": 5
+  },
+  {
+    "problemNumber": "128",
+    "problemTitle": "Longest Consecutive Sequence",
+    "problemSlug": "longest-consecutive-sequence",
+    "difficulty": "Medium",
+    "topics": ["Arrays & Hashing"],
+    "prerequisites": ["347"],
+    "learningOrder": 6
+  },
+  {
+    "problemNumber": "238",
+    "problemTitle": "Product of Array Except Self",
+    "problemSlug": "product-of-array-except-self",
+    "difficulty": "Medium",
+    "topics": ["Arrays & Hashing"],
+    "prerequisites": ["347", "128"],
+    "learningOrder": 7
+  },
+  {
+    "problemNumber": "560",
+    "problemTitle": "Subarray Sum Equals K",
+    "problemSlug": "subarray-sum-equals-k",
+    "difficulty": "Medium",
+    "topics": ["Arrays & Hashing"],
+    "prerequisites": ["238"],
+    "learningOrder": 8
+  },
+  {
+    "problemNumber": "36",
+    "problemTitle": "Valid Sudoku",
+    "problemSlug": "valid-sudoku",
+    "difficulty": "Medium",
+    "topics": ["Arrays & Hashing"],
+    "prerequisites": ["238", "560"],
+    "learningOrder": 9
+  },
+  {
+    "problemNumber": "202",
+    "problemTitle": "Happy Number",
+    "problemSlug": "happy-number",
+    "difficulty": "Easy",
+    "topics": ["Arrays & Hashing"],
+    "prerequisites": ["36"],
+    "learningOrder": 10
+  },
+  {
+    "problemNumber": "125",
+    "problemTitle": "Valid Palindrome",
+    "problemSlug": "valid-palindrome",
+    "difficulty": "Easy",
+    "topics": ["Two Pointers"],
+    "prerequisites": [],
+    "learningOrder": 11
+  },
+  {
+    "problemNumber": "167",
+    "problemTitle": "Two Sum II - Input Array Is Sorted",
+    "problemSlug": "two-sum-ii-input-array-is-sorted",
+    "difficulty": "Medium",
+    "topics": ["Two Pointers"],
+    "prerequisites": ["125"],
+    "learningOrder": 12
+  },
+  {
+    "problemNumber": "283",
+    "problemTitle": "Move Zeroes",
+    "problemSlug": "move-zeroes",
+    "difficulty": "Easy",
+    "topics": ["Two Pointers"],
+    "prerequisites": ["125", "167"],
+    "learningOrder": 13
+  },
+  {
+    "problemNumber": "26",
+    "problemTitle": "Remove Duplicates from Sorted Array",
+    "problemSlug": "remove-duplicates-from-sorted-array",
+    "difficulty": "Easy",
+    "topics": ["Two Pointers"],
+    "prerequisites": ["283"],
+    "learningOrder": 14
+  },
+  {
+    "problemNumber": "15",
+    "problemTitle": "3Sum",
+    "problemSlug": "3sum",
+    "difficulty": "Medium",
+    "topics": ["Two Pointers"],
+    "prerequisites": ["283", "26"],
+    "learningOrder": 15
+  },
+  {
+    "problemNumber": "11",
+    "problemTitle": "Container With Most Water",
+    "problemSlug": "container-with-most-water",
+    "difficulty": "Medium",
+    "topics": ["Two Pointers"],
+    "prerequisites": ["15"],
+    "learningOrder": 16
+  },
+  {
+    "problemNumber": "75",
+    "problemTitle": "Sort Colors",
+    "problemSlug": "sort-colors",
+    "difficulty": "Medium",
+    "topics": ["Two Pointers"],
+    "prerequisites": ["15", "11"],
+    "learningOrder": 17
+  },
+  {
+    "problemNumber": "88",
+    "problemTitle": "Merge Sorted Array",
+    "problemSlug": "merge-sorted-array",
+    "difficulty": "Easy",
+    "topics": ["Two Pointers"],
+    "prerequisites": ["75"],
+    "learningOrder": 18
+  },
+  {
+    "problemNumber": "977",
+    "problemTitle": "Squares of a Sorted Array",
+    "problemSlug": "squares-of-a-sorted-array",
+    "difficulty": "Easy",
+    "topics": ["Two Pointers"],
+    "prerequisites": ["75", "88"],
+    "learningOrder": 19
+  },
+  {
+    "problemNumber": "844",
+    "problemTitle": "Backspace String Compare",
+    "problemSlug": "backspace-string-compare",
+    "difficulty": "Easy",
+    "topics": ["Two Pointers"],
+    "prerequisites": ["977"],
+    "learningOrder": 20
+  },
+  {
+    "problemNumber": "643",
+    "problemTitle": "Maximum Average Subarray I",
+    "problemSlug": "maximum-average-subarray-i",
+    "difficulty": "Easy",
+    "topics": ["Sliding Window"],
+    "prerequisites": [],
+    "learningOrder": 21
+  },
+  {
+    "problemNumber": "3",
+    "problemTitle": "Longest Substring Without Repeating Characters",
+    "problemSlug": "longest-substring-without-repeating-characters",
+    "difficulty": "Medium",
+    "topics": ["Sliding Window"],
+    "prerequisites": ["643"],
+    "learningOrder": 22
+  },
+  {
+    "problemNumber": "121",
+    "problemTitle": "Best Time to Buy and Sell Stock",
+    "problemSlug": "best-time-to-buy-and-sell-stock",
+    "difficulty": "Easy",
+    "topics": ["Sliding Window"],
+    "prerequisites": ["643", "3"],
+    "learningOrder": 23
+  },
+  {
+    "problemNumber": "567",
+    "problemTitle": "Permutation in String",
+    "problemSlug": "permutation-in-string",
+    "difficulty": "Medium",
+    "topics": ["Sliding Window"],
+    "prerequisites": ["121"],
+    "learningOrder": 24
+  },
+  {
+    "problemNumber": "1004",
+    "problemTitle": "Max Consecutive Ones III",
+    "problemSlug": "max-consecutive-ones-iii",
+    "difficulty": "Medium",
+    "topics": ["Sliding Window"],
+    "prerequisites": ["121", "567"],
+    "learningOrder": 25
+  },
+  {
+    "problemNumber": "424",
+    "problemTitle": "Longest Repeating Character Replacement",
+    "problemSlug": "longest-repeating-character-replacement",
+    "difficulty": "Medium",
+    "topics": ["Sliding Window"],
+    "prerequisites": ["1004"],
+    "learningOrder": 26
+  },
+  {
+    "problemNumber": "209",
+    "problemTitle": "Minimum Size Subarray Sum",
+    "problemSlug": "minimum-size-subarray-sum",
+    "difficulty": "Medium",
+    "topics": ["Sliding Window"],
+    "prerequisites": ["1004", "424"],
+    "learningOrder": 27
+  },
+  {
+    "problemNumber": "904",
+    "problemTitle": "Fruit Into Baskets",
+    "problemSlug": "fruit-into-baskets",
+    "difficulty": "Medium",
+    "topics": ["Sliding Window"],
+    "prerequisites": ["209"],
+    "learningOrder": 28
+  },
+  {
+    "problemNumber": "219",
+    "problemTitle": "Contains Duplicate II",
+    "problemSlug": "contains-duplicate-ii",
+    "difficulty": "Easy",
+    "topics": ["Sliding Window"],
+    "prerequisites": ["209", "904"],
+    "learningOrder": 29
+  },
+  {
+    "problemNumber": "187",
+    "problemTitle": "Repeated DNA Sequences",
+    "problemSlug": "repeated-dna-sequences",
+    "difficulty": "Medium",
+    "topics": ["Sliding Window"],
+    "prerequisites": ["219"],
+    "learningOrder": 30
+  },
+  {
+    "problemNumber": "704",
+    "problemTitle": "Binary Search",
+    "problemSlug": "binary-search",
+    "difficulty": "Easy",
+    "topics": ["Binary Search"],
+    "prerequisites": [],
+    "learningOrder": 31
+  },
+  {
+    "problemNumber": "35",
+    "problemTitle": "Search Insert Position",
+    "problemSlug": "search-insert-position",
+    "difficulty": "Easy",
+    "topics": ["Binary Search"],
+    "prerequisites": ["704"],
+    "learningOrder": 32
+  },
+  {
+    "problemNumber": "34",
+    "problemTitle": "Find First and Last Position of Element in Sorted Array",
+    "problemSlug": "find-first-and-last-position-of-element-in-sorted-array",
+    "difficulty": "Medium",
+    "topics": ["Binary Search"],
+    "prerequisites": ["704", "35"],
+    "learningOrder": 33
+  },
+  {
+    "problemNumber": "278",
+    "problemTitle": "First Bad Version",
+    "problemSlug": "first-bad-version",
+    "difficulty": "Easy",
+    "topics": ["Binary Search"],
+    "prerequisites": ["34"],
+    "learningOrder": 34
+  },
+  {
+    "problemNumber": "33",
+    "problemTitle": "Search in Rotated Sorted Array",
+    "problemSlug": "search-in-rotated-sorted-array",
+    "difficulty": "Medium",
+    "topics": ["Binary Search"],
+    "prerequisites": ["34", "278"],
+    "learningOrder": 35
+  },
+  {
+    "problemNumber": "153",
+    "problemTitle": "Find Minimum in Rotated Sorted Array",
+    "problemSlug": "find-minimum-in-rotated-sorted-array",
+    "difficulty": "Medium",
+    "topics": ["Binary Search"],
+    "prerequisites": ["33"],
+    "learningOrder": 36
+  },
+  {
+    "problemNumber": "69",
+    "problemTitle": "Sqrt(x)",
+    "problemSlug": "sqrtx",
+    "difficulty": "Easy",
+    "topics": ["Binary Search"],
+    "prerequisites": ["33", "153"],
+    "learningOrder": 37
+  },
+  {
+    "problemNumber": "875",
+    "problemTitle": "Koko Eating Bananas",
+    "problemSlug": "koko-eating-bananas",
+    "difficulty": "Medium",
+    "topics": ["Binary Search"],
+    "prerequisites": ["69"],
+    "learningOrder": 38
+  },
+  {
+    "problemNumber": "74",
+    "problemTitle": "Search a 2D Matrix",
+    "problemSlug": "search-a-2d-matrix",
+    "difficulty": "Medium",
+    "topics": ["Binary Search"],
+    "prerequisites": ["69", "875"],
+    "learningOrder": 39
+  },
+  {
+    "problemNumber": "240",
+    "problemTitle": "Search a 2D Matrix II",
+    "problemSlug": "search-a-2d-matrix-ii",
+    "difficulty": "Medium",
+    "topics": ["Binary Search"],
+    "prerequisites": ["74"],
+    "learningOrder": 40
+  },
+  {
+    "problemNumber": "20",
+    "problemTitle": "Valid Parentheses",
+    "problemSlug": "valid-parentheses",
+    "difficulty": "Easy",
+    "topics": ["Stacks"],
+    "prerequisites": [],
+    "learningOrder": 41
+  },
+  {
+    "problemNumber": "150",
+    "problemTitle": "Evaluate Reverse Polish Notation",
+    "problemSlug": "evaluate-reverse-polish-notation",
+    "difficulty": "Medium",
+    "topics": ["Stacks"],
+    "prerequisites": ["20"],
+    "learningOrder": 42
+  },
+  {
+    "problemNumber": "155",
+    "problemTitle": "Min Stack",
+    "problemSlug": "min-stack",
+    "difficulty": "Medium",
+    "topics": ["Stacks"],
+    "prerequisites": ["20", "150"],
+    "learningOrder": 43
+  },
+  {
+    "problemNumber": "232",
+    "problemTitle": "Implement Queue using Stacks",
+    "problemSlug": "implement-queue-using-stacks",
+    "difficulty": "Easy",
+    "topics": ["Stacks"],
+    "prerequisites": ["155"],
+    "learningOrder": 44
+  },
+  {
+    "problemNumber": "496",
+    "problemTitle": "Next Greater Element I",
+    "problemSlug": "next-greater-element-i",
+    "difficulty": "Easy",
+    "topics": ["Stacks"],
+    "prerequisites": ["155", "232"],
+    "learningOrder": 45
+  },
+  {
+    "problemNumber": "739",
+    "problemTitle": "Daily Temperatures",
+    "problemSlug": "daily-temperatures",
+    "difficulty": "Medium",
+    "topics": ["Stacks"],
+    "prerequisites": ["496"],
+    "learningOrder": 46
+  },
+  {
+    "problemNumber": "853",
+    "problemTitle": "Car Fleet",
+    "problemSlug": "car-fleet",
+    "difficulty": "Medium",
+    "topics": ["Stacks"],
+    "prerequisites": ["496", "739"],
+    "learningOrder": 47
+  },
+  {
+    "problemNumber": "901",
+    "problemTitle": "Online Stock Span",
+    "problemSlug": "online-stock-span",
+    "difficulty": "Medium",
+    "topics": ["Stacks"],
+    "prerequisites": ["853"],
+    "learningOrder": 48
+  },
+  {
+    "problemNumber": "206",
+    "problemTitle": "Reverse Linked List",
+    "problemSlug": "reverse-linked-list",
+    "difficulty": "Easy",
+    "topics": ["Linked Lists"],
+    "prerequisites": [],
+    "learningOrder": 49
+  },
+  {
+    "problemNumber": "92",
+    "problemTitle": "Reverse Linked List II",
+    "problemSlug": "reverse-linked-list-ii",
+    "difficulty": "Medium",
+    "topics": ["Linked Lists"],
+    "prerequisites": ["206"],
+    "learningOrder": 50
+  },
+  {
+    "problemNumber": "21",
+    "problemTitle": "Merge Two Sorted Lists",
+    "problemSlug": "merge-two-sorted-lists",
+    "difficulty": "Easy",
+    "topics": ["Linked Lists"],
+    "prerequisites": ["206", "92"],
+    "learningOrder": 51
+  },
+  {
+    "problemNumber": "2",
+    "problemTitle": "Add Two Numbers",
+    "problemSlug": "add-two-numbers",
+    "difficulty": "Medium",
+    "topics": ["Linked Lists"],
+    "prerequisites": ["21"],
+    "learningOrder": 52
+  },
+  {
+    "problemNumber": "141",
+    "problemTitle": "Linked List Cycle",
+    "problemSlug": "linked-list-cycle",
+    "difficulty": "Easy",
+    "topics": ["Linked Lists"],
+    "prerequisites": ["21", "2"],
+    "learningOrder": 53
+  },
+  {
+    "problemNumber": "876",
+    "problemTitle": "Middle of the Linked List",
+    "problemSlug": "middle-of-the-linked-list",
+    "difficulty": "Easy",
+    "topics": ["Linked Lists"],
+    "prerequisites": ["141"],
+    "learningOrder": 54
+  },
+  {
+    "problemNumber": "19",
+    "problemTitle": "Remove Nth Node From End of List",
+    "problemSlug": "remove-nth-node-from-end-of-list",
+    "difficulty": "Medium",
+    "topics": ["Linked Lists"],
+    "prerequisites": ["141", "876"],
+    "learningOrder": 55
+  },
+  {
+    "problemNumber": "234",
+    "problemTitle": "Palindrome Linked List",
+    "problemSlug": "palindrome-linked-list",
+    "difficulty": "Easy",
+    "topics": ["Linked Lists"],
+    "prerequisites": ["19"],
+    "learningOrder": 56
+  },
+  {
+    "problemNumber": "143",
+    "problemTitle": "Reorder List",
+    "problemSlug": "reorder-list",
+    "difficulty": "Medium",
+    "topics": ["Linked Lists"],
+    "prerequisites": ["19", "234"],
+    "learningOrder": 57
+  },
+  {
+    "problemNumber": "138",
+    "problemTitle": "Copy List with Random Pointer",
+    "problemSlug": "copy-list-with-random-pointer",
+    "difficulty": "Medium",
+    "topics": ["Linked Lists"],
+    "prerequisites": ["143"],
+    "learningOrder": 58
+  },
+  {
+    "problemNumber": "104",
+    "problemTitle": "Maximum Depth of Binary Tree",
+    "problemSlug": "maximum-depth-of-binary-tree",
+    "difficulty": "Easy",
+    "topics": ["Trees (Basics)"],
+    "prerequisites": [],
+    "learningOrder": 59
+  },
+  {
+    "problemNumber": "110",
+    "problemTitle": "Balanced Binary Tree",
+    "problemSlug": "balanced-binary-tree",
+    "difficulty": "Easy",
+    "topics": ["Trees (Basics)"],
+    "prerequisites": ["104"],
+    "learningOrder": 60
+  },
+  {
+    "problemNumber": "100",
+    "problemTitle": "Same Tree",
+    "problemSlug": "same-tree",
+    "difficulty": "Easy",
+    "topics": ["Trees (Basics)"],
+    "prerequisites": ["104", "110"],
+    "learningOrder": 61
+  },
+  {
+    "problemNumber": "101",
+    "problemTitle": "Symmetric Tree",
+    "problemSlug": "symmetric-tree",
+    "difficulty": "Easy",
+    "topics": ["Trees (Basics)"],
+    "prerequisites": ["100"],
+    "learningOrder": 62
+  },
+  {
+    "problemNumber": "102",
+    "problemTitle": "Binary Tree Level Order Traversal",
+    "problemSlug": "binary-tree-level-order-traversal",
+    "difficulty": "Medium",
+    "topics": ["Trees (Basics)"],
+    "prerequisites": ["100", "101"],
+    "learningOrder": 63
+  },
+  {
+    "problemNumber": "199",
+    "problemTitle": "Binary Tree Right Side View",
+    "problemSlug": "binary-tree-right-side-view",
+    "difficulty": "Medium",
+    "topics": ["Trees (Basics)"],
+    "prerequisites": ["102"],
+    "learningOrder": 64
+  },
+  {
+    "problemNumber": "98",
+    "problemTitle": "Validate Binary Search Tree",
+    "problemSlug": "validate-binary-search-tree",
+    "difficulty": "Medium",
+    "topics": ["Trees (Basics)"],
+    "prerequisites": ["102", "199"],
+    "learningOrder": 65
+  },
+  {
+    "problemNumber": "235",
+    "problemTitle": "Lowest Common Ancestor of a Binary Search Tree",
+    "problemSlug": "lowest-common-ancestor-of-a-binary-search-tree",
+    "difficulty": "Easy",
+    "topics": ["Trees (Basics)"],
+    "prerequisites": ["98"],
+    "learningOrder": 66
+  },
+  {
+    "problemNumber": "112",
+    "problemTitle": "Path Sum",
+    "problemSlug": "path-sum",
+    "difficulty": "Easy",
+    "topics": ["Trees (Basics)"],
+    "prerequisites": ["98", "235"],
+    "learningOrder": 67
+  },
+  {
+    "problemNumber": "113",
+    "problemTitle": "Path Sum II",
+    "problemSlug": "path-sum-ii",
+    "difficulty": "Medium",
+    "topics": ["Trees (Basics)"],
+    "prerequisites": ["112"],
+    "learningOrder": 68
+  },
+  {
+    "problemNumber": "226",
+    "problemTitle": "Invert Binary Tree",
+    "problemSlug": "invert-binary-tree",
+    "difficulty": "Easy",
+    "topics": ["Trees (Basics)"],
+    "prerequisites": ["112", "113"],
+    "learningOrder": 69
+  },
+  {
+    "problemNumber": "572",
+    "problemTitle": "Subtree of Another Tree",
+    "problemSlug": "subtree-of-another-tree",
+    "difficulty": "Easy",
+    "topics": ["Trees (Basics)"],
+    "prerequisites": ["226"],
+    "learningOrder": 70
+  },
+  {
+    "problemNumber": "509",
+    "problemTitle": "Fibonacci Number",
+    "problemSlug": "fibonacci-number",
+    "difficulty": "Easy",
+    "topics": ["Recursion"],
+    "prerequisites": [],
+    "learningOrder": 71
+  },
+  {
+    "problemNumber": "344",
+    "problemTitle": "Reverse String",
+    "problemSlug": "reverse-string",
+    "difficulty": "Easy",
+    "topics": ["Recursion"],
+    "prerequisites": ["509"],
+    "learningOrder": 72
+  },
+  {
+    "problemNumber": "78",
+    "problemTitle": "Subsets",
+    "problemSlug": "subsets",
+    "difficulty": "Medium",
+    "topics": ["Recursion", "Backtracking"],
+    "prerequisites": ["509", "344"],
+    "learningOrder": 73
+  },
+  {
+    "problemNumber": "77",
+    "problemTitle": "Combinations",
+    "problemSlug": "combinations",
+    "difficulty": "Medium",
+    "topics": ["Recursion", "Backtracking"],
+    "prerequisites": ["78"],
+    "learningOrder": 74
+  },
+  {
+    "problemNumber": "46",
+    "problemTitle": "Permutations",
+    "problemSlug": "permutations",
+    "difficulty": "Medium",
+    "topics": ["Recursion", "Backtracking"],
+    "prerequisites": ["78", "77"],
+    "learningOrder": 75
+  },
+  {
+    "problemNumber": "47",
+    "problemTitle": "Permutations II",
+    "problemSlug": "permutations-ii",
+    "difficulty": "Medium",
+    "topics": ["Recursion", "Backtracking"],
+    "prerequisites": ["46"],
+    "learningOrder": 76
+  },
+  {
+    "problemNumber": "200",
+    "problemTitle": "Number of Islands",
+    "problemSlug": "number-of-islands",
+    "difficulty": "Medium",
+    "topics": ["Recursion", "DFS", "Graphs"],
+    "prerequisites": ["46", "47"],
+    "learningOrder": 77
+  },
+  {
+    "problemNumber": "695",
+    "problemTitle": "Max Area of Island",
+    "problemSlug": "max-area-of-island",
+    "difficulty": "Medium",
+    "topics": ["Recursion", "DFS", "Graphs"],
+    "prerequisites": ["200"],
+    "learningOrder": 78
+  },
+  {
+    "problemNumber": "680",
+    "problemTitle": "Valid Palindrome II",
+    "problemSlug": "valid-palindrome-ii",
+    "difficulty": "Easy",
+    "topics": ["Strings"],
+    "prerequisites": [],
+    "learningOrder": 79
+  },
+  {
+    "problemNumber": "5",
+    "problemTitle": "Longest Palindromic Substring",
+    "problemSlug": "longest-palindromic-substring",
+    "difficulty": "Medium",
+    "topics": ["Strings"],
+    "prerequisites": ["680"],
+    "learningOrder": 80
+  },
+  {
+    "problemNumber": "14",
+    "problemTitle": "Longest Common Prefix",
+    "problemSlug": "longest-common-prefix",
+    "difficulty": "Easy",
+    "topics": ["Strings"],
+    "prerequisites": ["680", "5"],
+    "learningOrder": 81
+  },
+  {
+    "problemNumber": "28",
+    "problemTitle": "Find the Index of the First Occurrence in a String",
+    "problemSlug": "find-the-index-of-the-first-occurrence-in-a-string",
+    "difficulty": "Easy",
+    "topics": ["Strings"],
+    "prerequisites": ["14"],
+    "learningOrder": 82
+  },
+  {
+    "problemNumber": "6",
+    "problemTitle": "Zigzag Conversion",
+    "problemSlug": "zigzag-conversion",
+    "difficulty": "Medium",
+    "topics": ["Strings"],
+    "prerequisites": ["14", "28"],
+    "learningOrder": 83
+  },
+  {
+    "problemNumber": "394",
+    "problemTitle": "Decode String",
+    "problemSlug": "decode-string",
+    "difficulty": "Medium",
+    "topics": ["Strings", "Recursion", "Stacks"],
+    "prerequisites": ["6"],
+    "learningOrder": 84
+  },
+  {
+    "problemNumber": "215",
+    "problemTitle": "Kth Largest Element in an Array",
+    "problemSlug": "kth-largest-element-in-an-array",
+    "difficulty": "Medium",
+    "topics": ["Heaps (Priority Queue)"],
+    "prerequisites": [],
+    "learningOrder": 85
+  },
+  {
+    "problemNumber": "973",
+    "problemTitle": "K Closest Points to Origin",
+    "problemSlug": "k-closest-points-to-origin",
+    "difficulty": "Medium",
+    "topics": ["Heaps (Priority Queue)"],
+    "prerequisites": ["215"],
+    "learningOrder": 86
+  },
+  {
+    "problemNumber": "703",
+    "problemTitle": "Kth Largest Element in a Stream",
+    "problemSlug": "kth-largest-element-in-a-stream",
+    "difficulty": "Easy",
+    "topics": ["Heaps (Priority Queue)"],
+    "prerequisites": ["215", "973"],
+    "learningOrder": 87
+  },
+  {
+    "problemNumber": "1046",
+    "problemTitle": "Last Stone Weight",
+    "problemSlug": "last-stone-weight",
+    "difficulty": "Easy",
+    "topics": ["Heaps (Priority Queue)"],
+    "prerequisites": ["703"],
+    "learningOrder": 88
+  },
+  {
+    "problemNumber": "451",
+    "problemTitle": "Sort Characters By Frequency",
+    "problemSlug": "sort-characters-by-frequency",
+    "difficulty": "Medium",
+    "topics": ["Heaps (Priority Queue)", "Arrays & Hashing"],
+    "prerequisites": ["703", "1046"],
+    "learningOrder": 89
+  },
+  {
+    "problemNumber": "692",
+    "problemTitle": "Top K Frequent Words",
+    "problemSlug": "top-k-frequent-words",
+    "difficulty": "Medium",
+    "topics": ["Heaps (Priority Queue)", "Arrays & Hashing"],
+    "prerequisites": ["451"],
+    "learningOrder": 90
+  },
+  {
+    "problemNumber": "122",
+    "problemTitle": "Best Time to Buy and Sell Stock II",
+    "problemSlug": "best-time-to-buy-and-sell-stock-ii",
+    "difficulty": "Medium",
+    "topics": ["Greedy"],
+    "prerequisites": [],
+    "learningOrder": 91
+  },
+  {
+    "problemNumber": "55",
+    "problemTitle": "Jump Game",
+    "problemSlug": "jump-game",
+    "difficulty": "Medium",
+    "topics": ["Greedy"],
+    "prerequisites": ["122"],
+    "learningOrder": 92
+  },
+  {
+    "problemNumber": "435",
+    "problemTitle": "Non-overlapping Intervals",
+    "problemSlug": "non-overlapping-intervals",
+    "difficulty": "Medium",
+    "topics": ["Greedy"],
+    "prerequisites": ["122", "55"],
+    "learningOrder": 93
+  },
+  {
+    "problemNumber": "56",
+    "problemTitle": "Merge Intervals",
+    "problemSlug": "merge-intervals",
+    "difficulty": "Medium",
+    "topics": ["Greedy"],
+    "prerequisites": ["435"],
+    "learningOrder": 94
+  },
+  {
+    "problemNumber": "45",
+    "problemTitle": "Jump Game II",
+    "problemSlug": "jump-game-ii",
+    "difficulty": "Medium",
+    "topics": ["Greedy"],
+    "prerequisites": ["55"],
+    "learningOrder": 95
+  },
+  {
+    "problemNumber": "134",
+    "problemTitle": "Gas Station",
+    "problemSlug": "gas-station",
+    "difficulty": "Medium",
+    "topics": ["Greedy"],
+    "prerequisites": ["45"],
+    "learningOrder": 96
+  }
+]
+
