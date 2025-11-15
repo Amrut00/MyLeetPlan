@@ -1,6 +1,6 @@
 # MyLeetPlan
 
-A comprehensive, personalized LeetCode practice dashboard with intelligent problem recommendations, spaced repetition system, and progress tracking. Built with React, Node.js, Express, and MongoDB.
+A comprehensive, personalized LeetCode practice dashboard with intelligent problem recommendations, spaced repetition system, and progress tracking. Built with React, Node.js, Express, and MongoDB. Built for personal use.
 
 ## 🎯 Overview
 
