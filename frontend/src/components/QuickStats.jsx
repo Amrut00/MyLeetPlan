@@ -2,14 +2,30 @@ import { useState, useEffect } from 'react';
 import { getStatistics, getDashboard } from '../services/api';
 import { HiOutlineChartBar, HiOutlineBolt, HiOutlineFire, HiOutlineCalendar, HiOutlineBookOpen } from 'react-icons/hi2';
 
-function QuickStats() {
+function QuickStats({ refreshKey = 0 }) {
   const [stats, setStats] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchData();
-  }, []);
+    
+    // Refresh stats periodically and when window regains focus
+    const interval = setInterval(() => {
+      fetchData();
+    }, 30000); // Refresh every 30 seconds
+    
+    const handleFocus = () => {
+      fetchData();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [refreshKey]); // Refresh when refreshKey changes
 
   const fetchData = async () => {
     try {

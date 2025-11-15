@@ -277,7 +277,7 @@ function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-4 max-w-[1920px] mx-auto h-full">
           {/* Left Sidebar - Quick Stats */}
           <div className="lg:col-span-2 hidden lg:block h-full overflow-y-auto pr-2 custom-scrollbar">
-            <QuickStats />
+            <QuickStats refreshKey={refreshKey} />
           </div>
 
           {/* Main Content Area */}

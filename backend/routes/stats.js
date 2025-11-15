@@ -8,7 +8,8 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Use UTC for consistency with MongoDB date storage
+    today.setUTCHours(0, 0, 0, 0);
 
     // Total problems
     const totalProblems = await Problem.countDocuments();
@@ -61,15 +62,17 @@ router.get('/', async (req, res) => {
     ]);
 
     // Calculate streak
+    // Use UTC dates to match MongoDB storage
     let streak = 0;
     let currentDate = new Date(today);
+    currentDate.setUTCHours(0, 0, 0, 0);
     let foundGap = false;
 
     while (!foundGap && streak < 365) {
       const dayStart = new Date(currentDate);
-      dayStart.setHours(0, 0, 0, 0);
+      dayStart.setUTCHours(0, 0, 0, 0);
       const dayEnd = new Date(currentDate);
-      dayEnd.setHours(23, 59, 59, 999);
+      dayEnd.setUTCHours(23, 59, 59, 999);
 
       const problemsCompleted = await Problem.countDocuments({
         completedDate: {
@@ -81,7 +84,7 @@ router.get('/', async (req, res) => {
 
       if (problemsCompleted > 0) {
         streak++;
-        currentDate.setDate(currentDate.getDate() - 1);
+        currentDate.setUTCDate(currentDate.getUTCDate() - 1);
       } else {
         foundGap = true;
       }
@@ -89,8 +92,8 @@ router.get('/', async (req, res) => {
 
     // This week's progress
     const weekStart = new Date(today);
-    weekStart.setDate(today.getDate() - today.getDay()); // Start of week (Sunday)
-    weekStart.setHours(0, 0, 0, 0);
+    weekStart.setUTCDate(today.getUTCDate() - today.getUTCDay()); // Start of week (Sunday)
+    weekStart.setUTCHours(0, 0, 0, 0);
 
     const thisWeekProblems = await Problem.countDocuments({
       completedDate: { $gte: weekStart },
@@ -99,7 +102,7 @@ router.get('/', async (req, res) => {
 
     // Problems solved today (includes both new problems and repetition problems)
     const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1);
+    tomorrow.setUTCDate(today.getUTCDate() + 1);
     const todaySolvedCount = await Problem.countDocuments({
       completedDate: {
         $gte: today,
