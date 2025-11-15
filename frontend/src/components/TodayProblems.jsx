@@ -8,22 +8,25 @@ function TodayProblems({ anchorTopic, onAddProblems, onUpdate }) {
   const [todayProblems, setTodayProblems] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchTodayProblems();
-  }, []);
-
   const fetchTodayProblems = async () => {
     try {
       setLoading(true);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todayStr = today.toISOString().split('T')[0];
-
+      // Get today's date string in YYYY-MM-DD format (UTC)
+      // This matches how the backend stores dates
+      const now = new Date();
+      const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+      const todayStr = todayUTC.toISOString().split('T')[0];
+      
       const allProblems = await getAllProblems({});
       const todayAdded = allProblems.filter(p => {
+        if (!p.addedDate) return false;
+        // Parse the date and get YYYY-MM-DD string in UTC
         const addedDate = new Date(p.addedDate);
-        addedDate.setHours(0, 0, 0, 0);
-        return addedDate.toISOString().split('T')[0] === todayStr;
+        const addedDateUTC = new Date(Date.UTC(addedDate.getUTCFullYear(), addedDate.getUTCMonth(), addedDate.getUTCDate()));
+        const addedDateStr = addedDateUTC.toISOString().split('T')[0];
+        
+        // Compare date strings
+        return addedDateStr === todayStr;
       });
 
       setTodayProblems(todayAdded);
@@ -33,6 +36,20 @@ function TodayProblems({ anchorTopic, onAddProblems, onUpdate }) {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchTodayProblems();
+  }, []);
+
+  // Refresh when component becomes visible or when explicitly triggered
+  // This helps catch updates that happen after initial mount
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchTodayProblems();
+    }, 30000); // Refresh every 30 seconds as a fallback
+
+    return () => clearInterval(interval);
+  }, []);
 
   const handleUpdate = () => {
     fetchTodayProblems();
@@ -46,7 +63,11 @@ function TodayProblems({ anchorTopic, onAddProblems, onUpdate }) {
         topic={anchorTopic} 
         onAddProblems={async (problemNumbers, topic, difficulty, notes, problemSlug, problemTitle) => {
           const response = await onAddProblems(problemNumbers, topic, difficulty, notes, problemSlug, problemTitle);
-          await fetchTodayProblems();
+          // Wait a bit for the database to update, then refresh
+          // Use a longer delay to ensure backend has processed the request
+          setTimeout(() => {
+            fetchTodayProblems();
+          }, 1000);
           return response;
         }}
       />
