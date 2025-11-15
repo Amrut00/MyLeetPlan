@@ -23,9 +23,42 @@ const PORT = process.env.PORT || 5000;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
+// CORS configuration - allow Vercel preview deployments and production
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  FRONTEND_URL
+];
+
+// Add Vercel preview URL pattern if FRONTEND_URL is a Vercel URL
+if (FRONTEND_URL.includes('vercel.app')) {
+  // Extract base domain (e.g., 'my-leet-plan.vercel.app')
+  const baseDomain = FRONTEND_URL.replace(/^https?:\/\//, '').split('.vercel.app')[0] + '.vercel.app';
+  // Allow production URL
+  if (!allowedOrigins.includes(`https://${baseDomain}`)) {
+    allowedOrigins.push(`https://${baseDomain}`);
+  }
+}
+
 // Middleware
 app.use(cors({
-  origin: FRONTEND_URL,
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is in allowed list
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    // Allow Vercel preview deployments (pattern: https://*-*.vercel.app)
+    if (origin.includes('.vercel.app')) {
+      return callback(null, true);
+    }
+    
+    // Reject other origins
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true
 }));
 app.use(express.json());
