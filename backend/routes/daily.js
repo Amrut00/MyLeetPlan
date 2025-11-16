@@ -22,15 +22,18 @@ router.get('/dashboard', async (req, res) => {
       // Fallback to default
       todayTopics = getTodayTopics();
     }
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayStr = formatDate(today);
+    // Use UTC day bounds to match database timestamps exactly
+    const todayStartUTC = new Date();
+    todayStartUTC.setUTCHours(0, 0, 0, 0);
+    const todayEndUTC = new Date(todayStartUTC);
+    todayEndUTC.setUTCHours(23, 59, 59, 999);
+    const todayStr = formatDate(new Date(todayStartUTC));
 
     // Get repetition problems: anchor problems where repetitionDate is TODAY
     // These are problems that are scheduled for repetition today
     // BACKLOG LOGIC: If a repetition problem is not completed on its scheduled day,
     // it becomes a backlog (repetitionDate < today and isCompleted: false)
-    const tomorrow = getDateNDaysFromToday(1);
+    const tomorrow = new Date(todayEndUTC);
     
     // Reset problems that were completed before their repetition date
     // This ensures problems that were completed when originally added show up for repetition
@@ -38,7 +41,7 @@ router.get('/dashboard', async (req, res) => {
       type: 'anchor',
       isCompleted: true,
       repetitionDate: {
-        $gte: today,
+        $gte: todayStartUTC,
         $lt: tomorrow
       },
       // Only reset if completedDate exists and was completed before the repetition date
@@ -75,7 +78,7 @@ router.get('/dashboard', async (req, res) => {
             type: 'anchor',
             isCompleted: true,
             repetitionDate: {
-              $gte: today,
+              $gte: todayStartUTC,
               $lt: tomorrow
             },
             // Only reset if completedDate exists and was completed before the repetition date
@@ -119,11 +122,11 @@ router.get('/dashboard', async (req, res) => {
     const repetitionProblems = await Problem.find({
       type: 'anchor',
       repetitionDate: {
-        $gte: today,
+        $gte: todayStartUTC,
         $lt: tomorrow
       },
       isCompleted: false // Only show if not yet completed in repetition
-    }).sort({ repetitionDate: 1, addedDate: 1 });
+    }).sort({ repetitionDate: 1, createdAt: 1 });
 
     // Get backlog: ONLY repetition problems (anchor problems) where repetitionDate is in the past
     // and they were NOT completed on their scheduled repetition day
@@ -131,15 +134,15 @@ router.get('/dashboard', async (req, res) => {
     const backlogProblems = await Problem.find({
       type: 'anchor',
       repetitionDate: {
-        $lt: today // repetitionDate is in the past
+        $lt: todayStartUTC // repetitionDate is in the past
       },
       isCompleted: false // Not yet completed (missed their repetition day)
     }).sort({ repetitionDate: 1 }); // Sort by when they were due (oldest first)
 
     // Get count of problems added today
     const todayAddedCount = await Problem.countDocuments({
-      addedDate: {
-        $gte: today,
+      createdAt: {
+        $gte: todayStartUTC,
         $lt: tomorrow
       }
     });
@@ -147,7 +150,7 @@ router.get('/dashboard', async (req, res) => {
     // Get count of problems solved today (includes both new problems and repetition problems)
     const todaySolvedCount = await Problem.countDocuments({
       completedDate: {
-        $gte: today,
+        $gte: todayStartUTC,
         $lt: tomorrow
       },
       isCompleted: true
@@ -169,7 +172,7 @@ router.get('/dashboard', async (req, res) => {
         notes: p.notes,
         isCompleted: p.isCompleted,
         solveCount: p.solveCount || 1,
-        addedDate: p.addedDate
+        createdAt: p.createdAt
       })),
       backlog: backlogProblems.map(p => ({
         id: p._id,
@@ -182,7 +185,7 @@ router.get('/dashboard', async (req, res) => {
         isCompleted: p.isCompleted,
         solveCount: p.solveCount || 1,
         repetitionDate: p.repetitionDate,
-        addedDate: p.addedDate
+        createdAt: p.createdAt
       }))
     });
   } catch (error) {

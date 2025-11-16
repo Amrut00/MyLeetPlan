@@ -29,9 +29,9 @@ function Dashboard() {
   const [selectedDate, setSelectedDate] = useState(null); // For date navigation from calendar
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  const fetchDashboard = async () => {
+  const fetchDashboard = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError(null);
       const data = await getDashboard();
       setDashboardData(data);
@@ -39,7 +39,7 @@ function Dashboard() {
       setError(err.response?.data?.error || 'Failed to load dashboard');
       console.error('Error fetching dashboard:', err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -59,7 +59,7 @@ function Dashboard() {
   const handleAddProblems = async (problemNumbers, topic, difficulty, notes = '', problemSlug = '', problemTitle = '') => {
     try {
       const response = await addProblems(problemNumbers, topic, difficulty, notes, problemSlug, problemTitle);
-      await fetchDashboard(); // Refresh dashboard
+      await fetchDashboard(true); // Refresh dashboard silently
       setRefreshKey(prev => prev + 1); // Trigger calendar refresh
       return response; // Return response so component can check for duplicates
     } catch (err) {
@@ -84,7 +84,7 @@ function Dashboard() {
       
       await markProblemComplete(problemId);
       toast.success('Problem marked as complete! 🎉');
-      await fetchDashboard(); // Refresh dashboard
+      await fetchDashboard(true); // Refresh dashboard silently
       setRefreshKey(prev => prev + 1); // Trigger calendar refresh
     } catch (err) {
       console.error('Error marking problem complete:', err);
@@ -93,11 +93,25 @@ function Dashboard() {
   };
 
   if (loading) {
+    // Full-viewport overlay to ensure no background shows through
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading your dashboard...</p>
+      <div className="fixed inset-0 z-50 bg-dark-bg flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="relative w-24 h-24 mx-auto">
+            {/* Base ring */}
+            <div className="absolute inset-0 rounded-full border-4 border-indigo-700/20" />
+            {/* Spinning gradient arc */}
+            <div className="absolute inset-0 rounded-full border-t-4 border-indigo-400 animate-spin" />
+            {/* Orbiting glow dot */}
+            <div
+              className="absolute left-1/2 top-0 -translate-x-1/2 w-3 h-3 rounded-full bg-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.8)]"
+              style={{ transformOrigin: '50% 100%', animation: 'spin 2s linear infinite' }}
+            />
+          </div>
+          <div className="font-extrabold text-lg bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
+            MyLeetPlan
+          </div>
+          <p className="text-sm text-dark-text-secondary">Preparing your dashboard…</p>
         </div>
       </div>
     );
@@ -298,7 +312,7 @@ function Dashboard() {
                 {/* Problem Recommendations (Priority 0 - Highest) */}
                 <ProblemRecommendations
                   onUpdate={() => {
-                    fetchDashboard();
+                    fetchDashboard(true); // silent
                     setRefreshKey(prev => prev + 1);
                   }}
                 />
@@ -309,7 +323,7 @@ function Dashboard() {
                   problems={dashboardData.repetitionProblems}
                   onMarkComplete={handleMarkComplete}
                   onUpdate={() => {
-                    fetchDashboard();
+                    fetchDashboard(true);
                     setRefreshKey(prev => prev + 1);
                   }}
                 />
@@ -319,7 +333,7 @@ function Dashboard() {
                   anchorTopic={dashboardData.anchorTopic}
                   onAddProblems={handleAddProblems}
                   onUpdate={() => {
-                    fetchDashboard();
+                    fetchDashboard(true);
                     setRefreshKey(prev => prev + 1);
                   }}
                 />
@@ -330,7 +344,7 @@ function Dashboard() {
                     problems={dashboardData.backlog}
                     onMarkComplete={handleMarkComplete}
                     onUpdate={() => {
-                      fetchDashboard();
+                      fetchDashboard(true);
                       setRefreshKey(prev => prev + 1);
                     }}
                   />

@@ -23,8 +23,7 @@ const practicePlanSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for efficient queries
-practicePlanSchema.index({ dayOfWeek: 1 });
+// Mongoose will create a unique index for dayOfWeek from the schema definition above.
 
 const PracticePlan = mongoose.model('PracticePlan', practicePlanSchema);
 

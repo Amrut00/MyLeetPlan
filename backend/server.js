@@ -63,13 +63,44 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => {
+// MongoDB: disable buffering so queries fail fast if not connected
+mongoose.set('bufferCommands', false);
+
+let isDbReady = false;
+
+async function start() {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI, {
+      // reasonable timeouts for serverless cold starts and flaky networks
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 20000,
+      family: 4
+    });
+    isDbReady = true;
     console.log('✅ Connected to MongoDB Atlas');
     console.log(`📊 Database: ${mongoose.connection.name}`);
-  })
-  .catch((error) => {
+
+    // Routes
+    app.use('/api/problems', problemRoutes);
+    app.use('/api/daily', dailyRoutes);
+    app.use('/api/stats', statsRoutes);
+    app.use('/api/leetcode', leetcodeRoutes);
+    app.use('/api/practice-plan', practicePlanRoutes);
+    app.use('/api/recommendations', recommendationRoutes);
+
+    // Health check (reports DB readiness)
+    app.get('/api/health', (req, res) => {
+      const state = mongoose.connection.readyState; // 1=connected
+      res.status(isDbReady ? 200 : 503).json({
+        status: isDbReady ? 'OK' : 'STARTING',
+        db: state === 1 ? 'connected' : 'not-connected'
+      });
+    });
+
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
+  } catch (error) {
     console.error('❌ MongoDB connection error:', error.message);
     if (error.message.includes('authentication failed')) {
       console.error('💡 Tip: Check your MongoDB username and password in the connection string');
@@ -77,22 +108,8 @@ mongoose.connect(process.env.MONGODB_URI)
       console.error('💡 Tip: Check your MongoDB cluster URL and network connectivity');
     }
     process.exit(1);
-  });
+  }
+}
 
-// Routes
-app.use('/api/problems', problemRoutes);
-app.use('/api/daily', dailyRoutes);
-app.use('/api/stats', statsRoutes);
-app.use('/api/leetcode', leetcodeRoutes);
-app.use('/api/practice-plan', practicePlanRoutes);
-app.use('/api/recommendations', recommendationRoutes);
-
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Server is running' });
-});
-
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+start();
 

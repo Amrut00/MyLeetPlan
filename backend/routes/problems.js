@@ -19,8 +19,11 @@ router.post('/', async (req, res) => {
 
     // Get repetition date based on practice plan
     const repetitionDate = await getRepetitionDateFromPlan(topic);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // UTC day bounds
+    const todayStartUTC = new Date();
+    todayStartUTC.setUTCHours(0, 0, 0, 0);
+    const todayEndUTC = new Date(todayStartUTC);
+    todayEndUTC.setUTCHours(23, 59, 59, 999);
 
     const results = [];
     const duplicates = [];
@@ -37,7 +40,22 @@ router.post('/', async (req, res) => {
       // Check if this problem already exists (same problem number)
       const existingProblem = await Problem.findOne({
         problemNumber: problemNumber
-      }).sort({ addedDate: -1 }); // Get the most recent one
+      }).sort({ createdAt: -1 }); // Get the most recent one
+
+      // If already added today (UTC), do not create a new one
+      const existingToday = await Problem.findOne({
+        problemNumber: problemNumber,
+        createdAt: { $gte: todayStartUTC, $lte: todayEndUTC }
+      });
+      if (existingToday) {
+        duplicates.push({
+          problemNumber,
+          isDuplicate: true,
+          reason: 'already_added_today'
+        });
+        results.push(existingToday);
+        continue;
+      }
 
       if (existingProblem) {
         // Problem already exists - get the highest solve count
@@ -45,7 +63,9 @@ router.post('/', async (req, res) => {
           problemNumber: problemNumber
         }).sort({ solveCount: -1 });
         
-        const newSolveCount = (maxSolveCount?.solveCount || 1) + 1;
+        // Do NOT increment solve count on add/duplicate creation.
+        // Solve count should only increment when marking a problem as completed.
+        const newSolveCount = (maxSolveCount?.solveCount || 0);
         
         // Update slug if new one is provided and different
         let finalSlug = problemSlug || existingProblem.problemSlug;
@@ -61,7 +81,7 @@ router.post('/', async (req, res) => {
           topic: topic,
           difficulty: req.body.difficulty || existingProblem.difficulty || 'Medium',
           notes: req.body.notes || '',
-          addedDate: today,
+          addedDate: todayStartUTC,
           repetitionDate: repetitionDate,
           type: 'anchor',
           solveCount: newSolveCount,
@@ -84,10 +104,10 @@ router.post('/', async (req, res) => {
           topic: topic,
           difficulty: req.body.difficulty || 'Medium',
           notes: req.body.notes || '',
-          addedDate: today,
+          addedDate: todayStartUTC,
           repetitionDate: repetitionDate,
           type: 'anchor',
-          solveCount: 1,
+          solveCount: 0,
           isCompleted: false // Not completed by default - user needs to mark it complete
         });
 
@@ -96,12 +116,14 @@ router.post('/', async (req, res) => {
       }
     }
 
-    res.status(201).json({
-      message: duplicates.length > 0 
-        ? `${results.length} problem(s) added. ${duplicates.length} duplicate(s) found - solve count incremented.`
+    const hasTodayDupes = duplicates.some(d => d.reason === 'already_added_today');
+    res.status(hasTodayDupes ? 200 : 201).json({
+      message: hasTodayDupes
+        ? `${results.length} problem(s) added or already present for today.`
         : `${results.length} problem(s) added successfully.`,
       problems: results,
-      duplicates: duplicates.length > 0 ? duplicates : undefined
+      duplicates: duplicates.length > 0 ? duplicates : undefined,
+      alreadyAddedToday: hasTodayDupes
     });
   } catch (error) {
     console.error('Error adding problems:', error);
@@ -122,7 +144,7 @@ router.patch('/:id/complete', async (req, res) => {
     }
 
     // If marking as complete (was not completed before), increment solve count
-    // This handles repetition problems - each time you complete them, it's another solve
+    // This handles repetition problems - each time you complete them on a DIFFERENT day, it's another solve
     const updateData = {
       isCompleted: true,
       completedDate: new Date()
@@ -131,26 +153,35 @@ router.patch('/:id/complete', async (req, res) => {
     // Only increment solve count if it wasn't already completed
     // This way, if you unmark and remark, it counts as another solve
     if (!currentProblem.isCompleted) {
-      // FIX: Find the maximum solve count for this problem number across all entries
-      // This ensures solve count is consistent across all entries for the same problem
-      const maxSolveCount = await Problem.findOne({
+      // Use UTC day boundaries to detect if we already counted a solve today for this problem number
+      const todayStartUTC = new Date();
+      todayStartUTC.setUTCHours(0, 0, 0, 0);
+      const todayEndUTC = new Date(todayStartUTC);
+      todayEndUTC.setUTCHours(23, 59, 59, 999);
+
+      const alreadySolvedToday = await Problem.exists({
+        problemNumber: currentProblem.problemNumber,
+        isCompleted: true,
+        completedDate: { $gte: todayStartUTC, $lte: todayEndUTC }
+      });
+
+      // Find the maximum solve count for this problem number across all entries
+      const maxSolveCountDoc = await Problem.findOne({
         problemNumber: currentProblem.problemNumber
       }).sort({ solveCount: -1 });
+      const currentMax = maxSolveCountDoc?.solveCount || currentProblem.solveCount || 0;
 
-      // Increment from the maximum solve count found
-      const newSolveCount = (maxSolveCount?.solveCount || currentProblem.solveCount || 0) + 1;
+      // Only increment if no completion recorded for this problem number today
+      const newSolveCount = alreadySolvedToday ? currentMax : currentMax + 1;
       updateData.solveCount = newSolveCount;
-      
-      // FIX: Sync solve count across all entries for this problem number
-      // This ensures consistency - all entries for the same problem show the same solve count
+
+      // Sync solve count across all entries for this problem number
       await Problem.updateMany(
         { problemNumber: currentProblem.problemNumber },
         { $set: { solveCount: newSolveCount } }
       );
-      
-      // IMPORTANT: When completing a repetition problem (type: 'anchor' that's being repeated),
-      // we should NOT create a new repetition entry. The problem is just marked as complete.
-      // Only NEW problems added via POST / create new repetition entries.
+
+      // IMPORTANT: When completing a repetition problem, we do not create new entries here.
     }
 
     const problem = await Problem.findByIdAndUpdate(
@@ -183,7 +214,7 @@ router.get('/', async (req, res) => {
       query.topic = topic;
     }
 
-    const problems = await Problem.find(query).sort({ addedDate: -1 });
+    const problems = await Problem.find(query).sort({ createdAt: -1 });
     res.json(problems);
   } catch (error) {
     console.error('Error fetching problems:', error);
@@ -264,17 +295,46 @@ router.patch('/:id/uncomplete', async (req, res) => {
       return res.status(404).json({ error: 'Problem not found' });
     }
 
-    // FIX: When unmarking a repetition problem, check if it should reappear in repetition
-    // If repetitionDate is today or in the past, the problem will show in backlog
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const repetitionDate = new Date(currentProblem.repetitionDate);
-    repetitionDate.setHours(0, 0, 0, 0);
-    
+    // Use UTC day boundaries
+    const todayStartUTC = new Date();
+    todayStartUTC.setUTCHours(0, 0, 0, 0);
+    const todayEndUTC = new Date(todayStartUTC);
+    todayEndUTC.setUTCHours(23, 59, 59, 999);
+
+    // When unmarking, we allow at most one decrement per day across the problemNumber.
+    // Count how many completions exist today BEFORE unmarking.
+    const completedTodayCount = await Problem.countDocuments({
+      problemNumber: currentProblem.problemNumber,
+      isCompleted: true,
+      completedDate: { $gte: todayStartUTC, $lte: todayEndUTC }
+    });
+
+    // Prepare base update (unmark + remove completedDate)
     const updateData = {
       isCompleted: false,
       $unset: { completedDate: 1 }
     };
+
+    // If this entry was completed today and it is the ONLY completion for today,
+    // then decrement solveCount by 1 (and sync across entries).
+    const wasCompletedToday = currentProblem.completedDate && (
+      currentProblem.completedDate >= todayStartUTC && currentProblem.completedDate <= todayEndUTC
+    );
+
+    if (wasCompletedToday && completedTodayCount === 1) {
+      // Find current max solveCount and decrement by 1 (not below 0)
+      const maxSolveCountDoc = await Problem.findOne({
+        problemNumber: currentProblem.problemNumber
+      }).sort({ solveCount: -1 });
+      const currentMax = maxSolveCountDoc?.solveCount || currentProblem.solveCount || 0;
+      const newSolveCount = Math.max(0, currentMax - 1);
+
+      // Sync decremented solveCount across all entries for this problemNumber
+      await Problem.updateMany(
+        { problemNumber: currentProblem.problemNumber },
+        { $set: { solveCount: newSolveCount } }
+      );
+    }
 
     const problem = await Problem.findByIdAndUpdate(
       id,
@@ -284,7 +344,12 @@ router.patch('/:id/uncomplete', async (req, res) => {
 
     // Note: If repetitionDate is in the past, the problem will appear in backlog
     // If repetitionDate is today, it will appear in repetition section on next dashboard load
-    const message = repetitionDate <= today
+    const todayLocal = new Date();
+    todayLocal.setHours(0, 0, 0, 0);
+    const repetitionDate = new Date(currentProblem.repetitionDate);
+    repetitionDate.setHours(0, 0, 0, 0);
+
+    const message = repetitionDate <= todayLocal
       ? 'Problem unmarked as completed. It will appear in backlog/repetition section.'
       : 'Problem unmarked as completed';
 

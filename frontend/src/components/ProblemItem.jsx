@@ -142,13 +142,14 @@ function ProblemItem({ problem, onUpdate, showActions = true }) {
                 Problem {problem.problemNumber}
               </span>
               <span className="text-sm text-gray-500 ml-2">({problem.topic})</span>
-              {problem.addedDate && (
+              {(problem.createdAt || problem.addedDate) && (
                 <div className="text-xs text-gray-400 mt-1">
-                  Added: {new Date(problem.addedDate).toLocaleDateString('en-US', {
+                  Added: {new Date(problem.createdAt || problem.addedDate).toLocaleDateString('en-US', {
                     weekday: 'long',
                     year: 'numeric',
                     month: 'long',
-                    day: 'numeric'
+                    day: 'numeric',
+                    timeZone: 'UTC'
                   })}
                 </div>
               )}

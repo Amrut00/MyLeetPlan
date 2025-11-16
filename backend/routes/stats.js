@@ -7,9 +7,9 @@ const router = express.Router();
 // Get statistics
 router.get('/', async (req, res) => {
   try {
-    const today = new Date();
-    // Use UTC for consistency with MongoDB date storage
-    today.setUTCHours(0, 0, 0, 0);
+    // Use UTC as the single source of truth (matches database timestamps)
+    const todayStartUTC = new Date();
+    todayStartUTC.setUTCHours(0, 0, 0, 0);
 
     // Total problems
     const totalProblems = await Problem.countDocuments();
@@ -61,52 +61,63 @@ router.get('/', async (req, res) => {
       { $sort: { _id: 1 } }
     ]);
 
-    // Calculate streak
-    // Use UTC dates to match MongoDB storage
+    // Calculate streak (UTC): consecutive days ending at the most recent active day
     let streak = 0;
-    let currentDate = new Date(today);
-    currentDate.setUTCHours(0, 0, 0, 0);
-    let foundGap = false;
-
-    while (!foundGap && streak < 365) {
-      const dayStart = new Date(currentDate);
-      dayStart.setUTCHours(0, 0, 0, 0);
-      const dayEnd = new Date(currentDate);
+    // Find most recent day with completions (<= today in UTC)
+    let anchorDayUTC = new Date(todayStartUTC);
+    let foundAnchor = false;
+    for (let i = 0; i < 365; i++) {
+      const dayStart = new Date(anchorDayUTC);
+      const dayEnd = new Date(anchorDayUTC);
       dayEnd.setUTCHours(23, 59, 59, 999);
-
-      const problemsCompleted = await Problem.countDocuments({
-        completedDate: {
-          $gte: dayStart,
-          $lte: dayEnd
-        },
+      const count = await Problem.countDocuments({
+        completedDate: { $gte: dayStart, $lte: dayEnd },
         isCompleted: true
       });
-
-      if (problemsCompleted > 0) {
-        streak++;
-        currentDate.setUTCDate(currentDate.getUTCDate() - 1);
-      } else {
-        foundGap = true;
+      if (count > 0) {
+        foundAnchor = true;
+        break;
+      }
+      anchorDayUTC.setUTCDate(anchorDayUTC.getUTCDate() - 1);
+    }
+    if (foundAnchor) {
+      // Count consecutive days backward from anchor
+      let cursorUTC = new Date(anchorDayUTC);
+      for (let i = 0; i < 365; i++) {
+        const dayStart = new Date(cursorUTC);
+        const dayEnd = new Date(cursorUTC);
+        dayEnd.setUTCHours(23, 59, 59, 999);
+        const count = await Problem.countDocuments({
+          completedDate: { $gte: dayStart, $lte: dayEnd },
+          isCompleted: true
+        });
+        if (count > 0) {
+          streak++;
+          cursorUTC.setUTCDate(cursorUTC.getUTCDate() - 1);
+        } else {
+          break;
+        }
       }
     }
 
     // This week's progress
-    const weekStart = new Date(today);
-    weekStart.setUTCDate(today.getUTCDate() - today.getUTCDay()); // Start of week (Sunday)
-    weekStart.setUTCHours(0, 0, 0, 0);
+    // Week boundaries in UTC (Sunday start)
+    const weekStartUTC = new Date(todayStartUTC);
+    weekStartUTC.setUTCDate(todayStartUTC.getUTCDate() - todayStartUTC.getUTCDay());
+    weekStartUTC.setUTCHours(0, 0, 0, 0);
 
     const thisWeekProblems = await Problem.countDocuments({
-      completedDate: { $gte: weekStart },
+      completedDate: { $gte: weekStartUTC },
       isCompleted: true
     });
 
     // Problems solved today (includes both new problems and repetition problems)
-    const tomorrow = new Date(today);
-    tomorrow.setUTCDate(today.getUTCDate() + 1);
+    const todayEndUTC = new Date(todayStartUTC);
+    todayEndUTC.setUTCHours(23, 59, 59, 999);
     const todaySolvedCount = await Problem.countDocuments({
       completedDate: {
-        $gte: today,
-        $lt: tomorrow
+        $gte: todayStartUTC,
+        $lt: todayEndUTC
       },
       isCompleted: true
     });
@@ -149,39 +160,23 @@ router.get('/', async (req, res) => {
 // Get calendar data (problem counts by date)
 router.get('/calendar', async (req, res) => {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    // Get data for the last 365 days
-    const startDate = new Date(today);
-    startDate.setDate(today.getDate() - 365);
-    startDate.setHours(0, 0, 0, 0);
+    // Use UTC for calendar grouping to match database timestamps exactly
+    const todayStartUTC = new Date();
+    todayStartUTC.setUTCHours(0, 0, 0, 0);
 
-    // Helper function to format date as YYYY-MM-DD in local timezone
-    const formatLocalDate = (date) => {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    };
+    // Get data for the last 365 days (UTC)
+    const startDateUTC = new Date(todayStartUTC);
+    startDateUTC.setUTCDate(todayStartUTC.getUTCDate() - 365);
+    startDateUTC.setUTCHours(0, 0, 0, 0);
 
-    // Get server timezone offset (in minutes)
-    // getTimezoneOffset() returns offset in minutes, positive means behind UTC
-    // MongoDB timezone format: "+05:30" means UTC+5:30
-    const timezoneOffset = new Date().getTimezoneOffset();
-    const offsetHours = Math.floor(Math.abs(timezoneOffset) / 60);
-    const offsetMinutes = Math.abs(timezoneOffset) % 60;
-    // Invert the sign because getTimezoneOffset is inverted
-    const timezoneString = timezoneOffset > 0 
-      ? `-${String(offsetHours).padStart(2, '0')}:${String(offsetMinutes).padStart(2, '0')}`
-      : `+${String(offsetHours).padStart(2, '0')}:${String(offsetMinutes).padStart(2, '0')}`;
+    const timezoneString = 'UTC';
 
     // Aggregate problems by completion date (use completedDate for completed problems)
-    // Convert UTC dates to local timezone for proper date grouping
+    // Group by UTC date so UI and DB match exactly
     const calendarData = await Problem.aggregate([
       {
         $match: {
-          completedDate: { $gte: startDate },
+          completedDate: { $gte: startDateUTC },
           isCompleted: true
         }
       },
@@ -201,74 +196,34 @@ router.get('/calendar', async (req, res) => {
       { $sort: { _id: 1 } }
     ]);
 
-    // Also get problems added (use addedDate for all problems, including completed ones)
-    // This gives a more comprehensive view - show activity on days when problems were added
-    const addedData = await Problem.aggregate([
-      {
-        $match: {
-          addedDate: { $gte: startDate }
-        }
-      },
-      {
-        $group: {
-          _id: { 
-            $dateToString: { 
-              format: '%Y-%m-%d', 
-              date: '$addedDate',
-              timezone: timezoneString
-            } 
-          },
-          added: { $sum: 1 }
-        }
-      }
-    ]);
-
-    // Merge the data - prioritize completed count, but also show added count
+    // Build a map for quick lookup
     const dataMap = {};
-    
-    // First, add completed problems
     calendarData.forEach(item => {
       dataMap[item._id] = {
         date: item._id,
-        count: item.count,
-        completed: item.completed
+        count: item.count || 0,
+        completed: item.completed || 0
       };
-    });
-
-    // Then, add/merge added problems count
-    addedData.forEach(item => {
-      if (dataMap[item._id]) {
-        // If we already have completed data, use the higher count
-        dataMap[item._id].added = item.added;
-        // Use completed count if available, otherwise use added count
-        dataMap[item._id].count = Math.max(dataMap[item._id].count || 0, item.added);
-      } else {
-        // No completed data, but problems were added
-        dataMap[item._id] = {
-          date: item._id,
-          count: item.added, // Show added count even if not completed
-          completed: 0,
-          added: item.added
-        };
-      }
     });
 
     // Convert to array and fill in missing dates with 0
     const result = [];
-    const currentDate = new Date(startDate);
-    while (currentDate <= today) {
-      const dateStr = formatLocalDate(currentDate);
+    let cursor = new Date(startDateUTC);
+    while (cursor <= todayStartUTC) {
+      const y = cursor.getUTCFullYear();
+      const m = String(cursor.getUTCMonth() + 1).padStart(2, '0');
+      const d = String(cursor.getUTCDate()).padStart(2, '0');
+      const dateStr = `${y}-${m}-${d}`;
       if (dataMap[dateStr]) {
         result.push(dataMap[dateStr]);
       } else {
         result.push({
           date: dateStr,
           count: 0,
-          completed: 0,
-          added: 0
+          completed: 0
         });
       }
-      currentDate.setDate(currentDate.getDate() + 1);
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
     }
 
     res.json(result);

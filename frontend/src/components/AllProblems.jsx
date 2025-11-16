@@ -371,11 +371,16 @@ function AllProblems({ onSwitchToDaily, onUpdate, selectedDate }) {
           <p className="text-dark-text-secondary text-sm">No problems found matching your filters.</p>
         </div>
       ) : (() => {
-        // Group problems by date (addedDate)
+        // Group problems by UTC date from database (createdAt preferred; fallback to addedDate)
         const groupedByDate = problems.reduce((acc, problem) => {
-          const addedDate = new Date(problem.addedDate);
-          addedDate.setHours(0, 0, 0, 0);
-          const dateStr = addedDate.toISOString().split('T')[0]; // YYYY-MM-DD
+          const source = problem.createdAt || problem.addedDate;
+          if (!source) return acc;
+          const d = new Date(source);
+          // Use UTC calendar day so it matches the database date
+          const y = d.getUTCFullYear();
+          const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+          const day = String(d.getUTCDate()).padStart(2, '0');
+          const dateStr = `${y}-${m}-${day}`;
           
           if (!acc[dateStr]) {
             acc[dateStr] = [];
@@ -391,7 +396,9 @@ function AllProblems({ onSwitchToDaily, onUpdate, selectedDate }) {
           <div className="space-y-4">
             {sortedDates.map((dateStr) => {
               const dateProblems = groupedByDate[dateStr];
-              const date = new Date(dateStr);
+              // Render header date using local (IST) by constructing from parts
+              const [yy, mm, dd] = dateStr.split('-').map(Number);
+              const date = new Date(yy, mm - 1, dd);
               const isSelected = selectedDate === dateStr;
               
               return (

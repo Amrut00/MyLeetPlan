@@ -11,22 +11,19 @@ function TodayProblems({ anchorTopic, onAddProblems, onUpdate }) {
   const fetchTodayProblems = async () => {
     try {
       setLoading(true);
-      // Get today's date string in YYYY-MM-DD format (UTC)
-      // This matches how the backend stores dates
+      // Get today's date string in YYYY-MM-DD (UTC) to match database dates
       const now = new Date();
       const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
       const todayStr = todayUTC.toISOString().split('T')[0];
       
       const allProblems = await getAllProblems({});
       const todayAdded = allProblems.filter(p => {
-        if (!p.addedDate) return false;
-        // Parse the date and get YYYY-MM-DD string in UTC
-        const addedDate = new Date(p.addedDate);
-        const addedDateUTC = new Date(Date.UTC(addedDate.getUTCFullYear(), addedDate.getUTCMonth(), addedDate.getUTCDate()));
-        const addedDateStr = addedDateUTC.toISOString().split('T')[0];
-        
-        // Compare date strings
-        return addedDateStr === todayStr;
+        const source = p.createdAt || p.addedDate;
+        if (!source) return false;
+        const d = new Date(source);
+        const dUTC = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+        const dStr = dUTC.toISOString().split('T')[0];
+        return dStr === todayStr;
       });
 
       setTodayProblems(todayAdded);

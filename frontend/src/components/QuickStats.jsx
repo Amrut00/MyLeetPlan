@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getStatistics, getDashboard } from '../services/api';
 import { HiOutlineChartBar, HiOutlineBolt, HiOutlineFire, HiOutlineCalendar, HiOutlineBookOpen } from 'react-icons/hi2';
 
@@ -6,30 +6,41 @@ function QuickStats({ refreshKey = 0 }) {
   const [stats, setStats] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const isInitialLoadRef = useRef(true);
 
   useEffect(() => {
-    fetchData();
-    
-    // Refresh stats periodically and when window regains focus
+    // Initial load (show skeleton once)
+    fetchData(false);
+
+    // Refresh stats periodically and when window regains focus (silent)
     const interval = setInterval(() => {
-      fetchData();
+      fetchData(true);
     }, 30000); // Refresh every 30 seconds
-    
+
     const handleFocus = () => {
-      fetchData();
+      fetchData(true);
     };
-    
+
     window.addEventListener('focus', handleFocus);
-    
+
     return () => {
       clearInterval(interval);
       window.removeEventListener('focus', handleFocus);
     };
-  }, [refreshKey]); // Refresh when refreshKey changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const fetchData = async () => {
+  // Silent refresh when parent signals data changes
+  useEffect(() => {
+    if (!isInitialLoadRef.current) {
+      fetchData(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshKey]);
+
+  const fetchData = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const [statsData, dashboard] = await Promise.all([
         getStatistics(),
         getDashboard()
@@ -39,7 +50,10 @@ function QuickStats({ refreshKey = 0 }) {
     } catch (error) {
       console.error('Error fetching quick stats:', error);
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+        isInitialLoadRef.current = false;
+      }
     }
   };
 

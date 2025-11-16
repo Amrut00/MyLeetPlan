@@ -52,7 +52,7 @@ function ProblemRecommendations({ onUpdate }) {
         ? problem.topics[0] 
         : 'Arrays & Hashing'; // Default topic
 
-      await addProblems(
+      const resp = await addProblems(
         [problem.problemNumber],
         topic,
         difficulty,
@@ -61,7 +61,11 @@ function ProblemRecommendations({ onUpdate }) {
         problemTitle
       );
 
-      toast.success(`Problem ${problem.problemNumber} added! 🎉`);
+      if (resp?.alreadyAddedToday) {
+        toast.success(`Problem ${problem.problemNumber} is already added today.`);
+      } else {
+        toast.success(`Problem ${problem.problemNumber} added! 🎉`);
+      }
       
       // Refresh recommendations and dashboard
       if (onUpdate) onUpdate();

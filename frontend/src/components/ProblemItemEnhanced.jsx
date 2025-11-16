@@ -655,13 +655,14 @@ function ProblemItemEnhanced({ problem, onUpdate, showActions = true, isBacklog 
                   </span>
                 )}
               </div>
-              {problem.addedDate && (
+              {(problem.createdAt || problem.addedDate) && (
                 <div className="text-xs text-dark-text-muted mt-1">
-                  Added: {new Date(problem.addedDate).toLocaleDateString('en-US', {
+                  Added: {new Date(problem.createdAt || problem.addedDate).toLocaleDateString('en-US', {
                     weekday: 'long',
                     year: 'numeric',
                     month: 'long',
-                    day: 'numeric'
+                    day: 'numeric',
+                    timeZone: 'UTC'
                   })}
                   {problem.completedDate && (
                     <span className="ml-2 text-green-500/70 flex items-center gap-1">
@@ -670,7 +671,8 @@ function ProblemItemEnhanced({ problem, onUpdate, showActions = true, isBacklog 
                         weekday: 'long',
                         year: 'numeric',
                         month: 'long',
-                        day: 'numeric'
+                        day: 'numeric',
+                        timeZone: 'UTC'
                       })}</span>
                     </span>
                   )}

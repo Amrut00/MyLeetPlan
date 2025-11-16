@@ -57,7 +57,7 @@ const problemSchema = new mongoose.Schema({
   },
   solveCount: {
     type: Number,
-    default: 1
+    default: 0
     // Tracks how many times this problem has been solved
   }
 }, {
