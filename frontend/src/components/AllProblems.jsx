@@ -164,17 +164,17 @@ function AllProblems({ onSwitchToDaily, onUpdate, selectedDate }) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="w-full space-y-3 sm:space-y-4">
       {/* Daily View Preview */}
       {dashboardData && (
         <div className="bg-gradient-to-r from-indigo-900/50 to-purple-900/50 rounded-lg shadow-sm p-3 sm:p-4 text-white border border-indigo-700/30">
-          <div className="flex justify-between items-start mb-3">
+          <div className="flex justify-between items-start mb-2.5 sm:mb-3">
             <div>
-              <h2 className="text-xl sm:text-2xl font-bold mb-1.5 flex items-center gap-2">
-                <HiOutlineCalendar className="w-6 h-6" />
+              <h2 className="text-lg sm:text-2xl font-bold mb-1.5 flex items-center gap-2">
+                <HiOutlineCalendar className="w-5 h-5 sm:w-6 sm:h-6" />
                 <span>Today's Overview</span>
               </h2>
-              <p className="text-indigo-200">
+              <p className="text-indigo-200 text-xs sm:text-sm">
                 {(() => {
                   // Parse date string (YYYY-MM-DD) as local date, not UTC
                   const [year, month, day] = dashboardData.date.split('-').map(Number);
@@ -191,39 +191,39 @@ function AllProblems({ onSwitchToDaily, onUpdate, selectedDate }) {
             {onSwitchToDaily && (
               <button
                 onClick={onSwitchToDaily}
-                className="px-4 py-2 bg-dark-bg-tertiary text-indigo-300 rounded-lg hover:bg-dark-bg-hover font-medium transition border border-indigo-700/30"
+                className="px-3 sm:px-4 py-1.5 sm:py-2 bg-dark-bg-tertiary text-indigo-300 rounded-lg hover:bg-dark-bg-hover font-medium transition border border-indigo-700/30 text-xs sm:text-sm"
               >
                 Go to Daily View →
               </button>
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-3 mb-2.5 sm:mb-3">
             {/* Anchor Topic */}
-            <div className="bg-dark-bg-secondary/30 backdrop-blur-sm rounded-lg p-3 border border-indigo-700/20">
-              <div className="text-sm text-indigo-200 mb-1 flex items-center gap-1.5">
+            <div className="bg-dark-bg-secondary/30 backdrop-blur-sm rounded-lg p-2.5 sm:p-3 border border-indigo-700/20">
+              <div className="text-xs sm:text-sm text-indigo-200 mb-1 flex items-center gap-1.5">
                 <HiOutlineFlag className="w-4 h-4" />
                 <span>Anchor Topic</span>
               </div>
-              <div className="text-lg font-semibold">{dashboardData.anchorTopic}</div>
-              <div className="text-xs text-indigo-300 mt-1.5">Learn 2 new problems</div>
+              <div className="text-base sm:text-lg font-semibold">{dashboardData.anchorTopic}</div>
+              <div className="text-[11px] sm:text-xs text-indigo-300 mt-1.5">Learn 2 new problems</div>
             </div>
 
             {/* Repetition Topic */}
-            <div className="bg-dark-bg-secondary/30 backdrop-blur-sm rounded-lg p-3 border border-indigo-700/20">
-              <div className="text-sm text-indigo-200 mb-1 flex items-center gap-1.5">
+            <div className="bg-dark-bg-secondary/30 backdrop-blur-sm rounded-lg p-2.5 sm:p-3 border border-indigo-700/20">
+              <div className="text-xs sm:text-sm text-indigo-200 mb-1 flex items-center gap-1.5">
                 <HiOutlineArrowPath className="w-4 h-4" />
                 <span>Repetition Topic</span>
               </div>
-              <div className="text-lg font-semibold">{dashboardData.repetitionTopic}</div>
-              <div className="text-xs text-indigo-300 mt-1.5">
+              <div className="text-base sm:text-lg font-semibold">{dashboardData.repetitionTopic}</div>
+              <div className="text-[11px] sm:text-xs text-indigo-300 mt-1.5">
                 {stats.todayRepetitionCompleted}/{stats.todayRepetition} completed
               </div>
             </div>
 
             {/* Backlog */}
             <div 
-              className="bg-dark-bg-secondary/30 backdrop-blur-sm rounded-lg p-3 border border-indigo-700/20 cursor-pointer hover:bg-dark-bg-secondary/40 transition-colors"
+              className="bg-dark-bg-secondary/30 backdrop-blur-sm rounded-lg p-2.5 sm:p-3 border border-indigo-700/20 cursor-pointer hover:bg-dark-bg-secondary/40 transition-colors"
               onClick={() => {
                 if (onSwitchToDaily) {
                   onSwitchToDaily();
@@ -243,29 +243,29 @@ function AllProblems({ onSwitchToDaily, onUpdate, selectedDate }) {
                 }
               }}
             >
-              <div className="text-sm text-indigo-200 mb-1 flex items-center gap-1.5">
+              <div className="text-xs sm:text-sm text-indigo-200 mb-1 flex items-center gap-1.5">
                 <HiOutlineClock className="w-4 h-4" />
                 <span>Backlog</span>
               </div>
-              <div className="text-lg font-semibold text-indigo-300 hover:text-indigo-200 transition-colors">
+              <div className="text-base sm:text-lg font-semibold text-indigo-300 hover:text-indigo-200 transition-colors">
                 {stats.backlog} problems
               </div>
-              <div className="text-xs text-indigo-300 mt-1.5">Click to view →</div>
+              <div className="text-[11px] sm:text-xs text-indigo-300 mt-1.5">Click to view →</div>
             </div>
           </div>
 
           {/* Progress Bar */}
           {stats.todayRepetition > 0 && (
-            <div className="mt-4">
-              <div className="flex justify-between text-sm mb-2">
+            <div className="mt-3 sm:mt-4">
+              <div className="flex justify-between text-xs sm:text-sm mb-2">
                 <span className="text-indigo-200">Today's Repetition Progress</span>
                 <span className="text-white font-semibold">
                   {stats.todayRepetitionCompleted}/{stats.todayRepetition}
                 </span>
               </div>
-              <div className="w-full bg-dark-bg-secondary/30 rounded-full h-3">
+              <div className="w-full bg-dark-bg-secondary/30 rounded-full h-2.5 sm:h-3">
                 <div
-                  className="bg-white rounded-full h-3 transition-all duration-300"
+                  className="bg-white rounded-full h-2.5 sm:h-3 transition-all duration-300"
                   style={{
                     width: `${(stats.todayRepetitionCompleted / stats.todayRepetition) * 100}%`
                   }}
@@ -278,48 +278,48 @@ function AllProblems({ onSwitchToDaily, onUpdate, selectedDate }) {
 
       {/* All Problems Section */}
       <div className="bg-dark-bg-tertiary rounded-lg shadow-sm border border-dark-border p-3 sm:p-4">
-        <div className="flex justify-between items-center mb-3">
-          <h2 className="text-xl sm:text-2xl font-bold text-dark-text flex items-center gap-2">
-            <HiOutlineClipboardDocumentList className="w-6 h-6" />
+        <div className="flex justify-between items-center mb-2.5 sm:mb-3">
+          <h2 className="text-lg sm:text-2xl font-bold text-dark-text flex items-center gap-2">
+            <HiOutlineClipboardDocumentList className="w-5 h-5 sm:w-6 sm:h-6" />
             <span>All Problems</span>
           </h2>
-          <div className="flex gap-3 text-sm">
-            <div className="text-dark-text-secondary">
+          <div className="flex gap-2.5 sm:gap-3 text-xs sm:text-sm">
+            <div className="text-dark-text-secondary whitespace-nowrap">
               <span className="font-semibold text-dark-text">{stats.total}</span> total
             </div>
-            <div className="text-green-400">
+            <div className="text-green-400 whitespace-nowrap">
               <span className="font-semibold">{stats.completed}</span> completed
             </div>
-            <div className="text-orange-400">
+            <div className="text-orange-400 whitespace-nowrap">
               <span className="font-semibold">{stats.pending}</span> pending
             </div>
           </div>
         </div>
 
         {/* Search */}
-        <div className="mb-4">
+        <div className="mb-3 sm:mb-4">
           <div className="relative">
-            <HiOutlineMagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-text-muted" />
+            <HiOutlineMagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-dark-text-muted" />
             <input
               type="text"
               placeholder="Search by problem number, topic, or notes..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-dark-border bg-dark-bg-secondary text-dark-text rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 border border-dark-border bg-dark-bg-secondary text-dark-text rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm sm:text-base"
             />
           </div>
         </div>
         
         {/* Filters */}
-      <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="mb-3 sm:mb-4 grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-3">
         <div>
-          <label className="block text-sm font-medium text-dark-text mb-2">
+          <label className="block text-xs sm:text-sm font-medium text-dark-text mb-1.5 sm:mb-2">
             Filter by Status
           </label>
           <select
             value={filters.completed || ''}
             onChange={(e) => handleFilterChange('completed', e.target.value)}
-            className="w-full px-4 py-2 border border-dark-border bg-dark-bg-secondary text-dark-text rounded-lg focus:ring-2 focus:ring-indigo-500"
+            className="w-full px-3 sm:px-4 py-2 border border-dark-border bg-dark-bg-secondary text-dark-text rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
           >
             <option value="">All</option>
             <option value="false">Not Completed</option>
@@ -327,26 +327,26 @@ function AllProblems({ onSwitchToDaily, onUpdate, selectedDate }) {
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-dark-text mb-2">
+          <label className="block text-xs sm:text-sm font-medium text-dark-text mb-1.5 sm:mb-2">
             Filter by Type
           </label>
           <select
             value={repeatedFilter ? 'true' : ''}
             onChange={(e) => setRepeatedFilter(e.target.value === 'true')}
-            className="w-full px-4 py-2 border border-dark-border bg-dark-bg-secondary text-dark-text rounded-lg focus:ring-2 focus:ring-indigo-500"
+            className="w-full px-3 sm:px-4 py-2 border border-dark-border bg-dark-bg-secondary text-dark-text rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
           >
             <option value="">All Problems</option>
             <option value="true">Repeated Problems Only</option>
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-dark-text mb-2">
+          <label className="block text-xs sm:text-sm font-medium text-dark-text mb-1.5 sm:mb-2">
             Filter by Topic
           </label>
           <select
             value={filters.topic || ''}
             onChange={(e) => handleFilterChange('topic', e.target.value)}
-            className="w-full px-4 py-2 border border-dark-border bg-dark-bg-secondary text-dark-text rounded-lg focus:ring-2 focus:ring-indigo-500"
+            className="w-full px-3 sm:px-4 py-2 border border-dark-border bg-dark-bg-secondary text-dark-text rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
           >
             <option value="">All Topics</option>
             {(() => {
@@ -367,8 +367,8 @@ function AllProblems({ onSwitchToDaily, onUpdate, selectedDate }) {
 
       {/* Problems List - Grouped by Date */}
       {problems.length === 0 ? (
-        <div className="bg-dark-bg-secondary border border-dark-border rounded-lg p-4 text-center">
-          <p className="text-dark-text-secondary text-sm">No problems found matching your filters.</p>
+        <div className="bg-dark-bg-secondary border border-dark-border rounded-lg p-3 sm:p-4 text-center">
+          <p className="text-dark-text-secondary text-xs sm:text-sm">No problems found matching your filters.</p>
         </div>
       ) : (() => {
         // Group problems by UTC date from database (createdAt preferred; fallback to addedDate)
@@ -409,7 +409,7 @@ function AllProblems({ onSwitchToDaily, onUpdate, selectedDate }) {
                   }}
                   className={`scroll-mt-4 transition-all ${isSelected ? 'ring-2 ring-indigo-500 rounded-lg p-1 -m-1 bg-indigo-900/20' : ''}`}
                 >
-                  <div className="flex items-center justify-between py-1.5 mb-2 border-b border-dark-border">
+                <div className="flex items-center justify-between py-1 mb-2 border-b border-dark-border">
                     <h3 className="text-xs sm:text-sm font-medium text-dark-text-secondary">
                       {date.toLocaleDateString('en-US', {
                         weekday: 'long',

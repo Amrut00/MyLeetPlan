@@ -101,9 +101,11 @@ router.get('/', async (req, res) => {
     }
 
     // This week's progress
-    // Week boundaries in UTC (Sunday start)
+    // Week boundaries in UTC (Monday start)
     const weekStartUTC = new Date(todayStartUTC);
-    weekStartUTC.setUTCDate(todayStartUTC.getUTCDate() - todayStartUTC.getUTCDay());
+    const dayOfWeekUTC = todayStartUTC.getUTCDay(); // 0=Sun,1=Mon,...6=Sat
+    const daysSinceMonday = (dayOfWeekUTC + 6) % 7; // Sun->6, Mon->0, Tue->1, ...
+    weekStartUTC.setUTCDate(todayStartUTC.getUTCDate() - daysSinceMonday);
     weekStartUTC.setUTCHours(0, 0, 0, 0);
 
     const thisWeekProblems = await Problem.countDocuments({

@@ -351,12 +351,12 @@ function AnchorSection({ topic, onAddProblems }) {
 
   return (
     <div className="bg-dark-bg-tertiary rounded-lg shadow-sm border border-dark-border p-3 sm:p-4">
-      <div className="mb-4">
-        <h2 className="text-xl sm:text-2xl font-bold text-dark-text mb-2 flex items-center gap-2">
-          <HiOutlinePlus className="w-6 h-6" />
+      <div className="mb-3 sm:mb-4">
+        <h2 className="text-lg sm:text-2xl font-bold text-dark-text mb-1.5 sm:mb-2 flex items-center gap-2">
+          <HiOutlinePlus className="w-5 h-5 sm:w-6 sm:h-6" />
           <span>Add New Problem</span>
         </h2>
-        <p className="text-sm text-dark-text-secondary">
+        <p className="text-xs sm:text-sm text-dark-text-secondary">
           Add problems you solved today. You can add problems from any topic, not just today's anchor topic.
         </p>
         {topic && (
@@ -370,9 +370,9 @@ function AnchorSection({ topic, onAddProblems }) {
       </div>
 
       <form id="add-problem-form" onSubmit={handleSubmit} className="space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-3">
           <div>
-            <label htmlFor="problemNumber" className="block text-sm font-medium text-dark-text mb-2">
+            <label htmlFor="problemNumber" className="block text-xs sm:text-sm font-medium text-dark-text mb-1.5 sm:mb-2">
               Problem Number <span className="text-red-400">*</span>
             </label>
             <div className="relative">
@@ -386,7 +386,7 @@ function AnchorSection({ topic, onAddProblems }) {
                   setProblemTitle(''); // Clear title when number changes
                 }}
                 placeholder="e.g., 1922"
-                className="w-full px-4 py-2 pr-24 border border-dark-border bg-dark-bg-secondary text-dark-text rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-3 sm:px-4 py-2 pr-24 border border-dark-border bg-dark-bg-secondary text-dark-text rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
                 disabled={loading || fetching}
                 required
                 autoFocus
@@ -396,7 +396,7 @@ function AnchorSection({ topic, onAddProblems }) {
                   type="button"
                   onClick={handleFetchProblem}
                   disabled={fetching || loading}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 text-xs bg-indigo-900/30 text-indigo-300 rounded hover:bg-indigo-800/30 disabled:bg-dark-bg-hover disabled:text-dark-text-muted transition border border-indigo-700/30"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 sm:px-3 py-1 text-xs bg-indigo-900/30 text-indigo-300 rounded hover:bg-indigo-800/30 disabled:bg-dark-bg-hover disabled:text-dark-text-muted transition border border-indigo-700/30"
                   title="Fetch problem info from LeetCode"
                 >
                   {fetching ? (
@@ -418,7 +418,7 @@ function AnchorSection({ topic, onAddProblems }) {
             )}
           </div>
           <div>
-            <label htmlFor="problemSlug" className="block text-sm font-medium text-dark-text mb-2">
+            <label htmlFor="problemSlug" className="block text-xs sm:text-sm font-medium text-dark-text mb-1.5 sm:mb-2">
               Problem Slug (Auto-filled)
             </label>
             <input
@@ -427,7 +427,7 @@ function AnchorSection({ topic, onAddProblems }) {
               value={problemSlug}
               onChange={(e) => setProblemSlug(e.target.value)}
               placeholder="Will be auto-filled from LeetCode"
-              className="w-full px-4 py-2 border border-dark-border bg-dark-bg-hover text-dark-text rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-3 sm:px-4 py-2 border border-dark-border bg-dark-bg-hover text-dark-text rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
               disabled={loading || fetching}
               readOnly={!!problemSlug && !fetching}
             />
@@ -443,7 +443,7 @@ function AnchorSection({ topic, onAddProblems }) {
             </p>
           </div>
           <div>
-            <label htmlFor="selectedTopic" className="block text-sm font-medium text-dark-text mb-2">
+            <label htmlFor="selectedTopic" className="block text-xs sm:text-sm font-medium text-dark-text mb-1.5 sm:mb-2">
               Topic <span className="text-red-400">*</span>
             </label>
             <select
@@ -455,7 +455,7 @@ function AnchorSection({ topic, onAddProblems }) {
                   setCustomTopic('');
                 }
               }}
-              className="w-full px-4 py-2 border border-dark-border bg-dark-bg-secondary text-dark-text rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-3 sm:px-4 py-2 border border-dark-border bg-dark-bg-secondary text-dark-text rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
               disabled={loading}
               required
             >
@@ -501,7 +501,7 @@ function AnchorSection({ topic, onAddProblems }) {
                     }
                   }}
                   placeholder="Enter custom topic..."
-                  className={`w-full mt-2 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-dark-bg-tertiary text-dark-text ${
+                  className={`w-full mt-2 px-3 sm:px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-dark-bg-tertiary text-dark-text text-sm ${
                     topicWarning ? 'border-yellow-500 bg-yellow-900/20' : 'border-dark-border'
                   }`}
                   disabled={loading}
@@ -517,14 +517,14 @@ function AnchorSection({ topic, onAddProblems }) {
             )}
           </div>
           <div>
-            <label htmlFor="difficulty" className="block text-sm font-medium text-dark-text mb-2">
+            <label htmlFor="difficulty" className="block text-xs sm:text-sm font-medium text-dark-text mb-1.5 sm:mb-2">
               Difficulty
             </label>
             <select
               id="difficulty"
               value={difficulty}
               onChange={(e) => setDifficulty(e.target.value)}
-              className="w-full px-4 py-2 border border-dark-border bg-dark-bg-secondary text-dark-text rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-3 sm:px-4 py-2 border border-dark-border bg-dark-bg-secondary text-dark-text rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
               disabled={loading}
             >
               <option value="Easy">Easy</option>
@@ -533,7 +533,7 @@ function AnchorSection({ topic, onAddProblems }) {
             </select>
           </div>
           <div>
-            <label htmlFor="notes" className="block text-sm font-medium text-dark-text mb-2">
+            <label htmlFor="notes" className="block text-xs sm:text-sm font-medium text-dark-text mb-1.5 sm:mb-2">
               Notes (Optional)
             </label>
             <input
@@ -542,14 +542,14 @@ function AnchorSection({ topic, onAddProblems }) {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Add quick notes..."
-              className="w-full px-4 py-2 border border-dark-border bg-dark-bg-secondary text-dark-text rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-3 sm:px-4 py-2 border border-dark-border bg-dark-bg-secondary text-dark-text rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
               disabled={loading}
             />
           </div>
         </div>
 
         {error && (
-          <div className="bg-red-900/20 border border-red-700/30 text-red-300 px-4 py-3 rounded-lg">
+          <div className="bg-red-900/20 border border-red-700/30 text-red-300 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg text-sm">
             {error}
           </div>
         )}
@@ -558,7 +558,7 @@ function AnchorSection({ topic, onAddProblems }) {
           <button
             type="submit"
             disabled={loading || !problemNumber.trim()}
-            className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-dark-bg-hover disabled:text-dark-text-muted disabled:cursor-not-allowed transition font-medium"
+            className="px-4 sm:px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-dark-bg-hover disabled:text-dark-text-muted disabled:cursor-not-allowed transition font-medium text-sm sm:text-base"
           >
             {loading ? (
               <span>Adding...</span>
@@ -579,7 +579,7 @@ function AnchorSection({ topic, onAddProblems }) {
               setSelectedTopic(topic);
               setError(null);
             }}
-            className="px-4 py-2 bg-dark-bg-hover text-dark-text rounded-lg hover:bg-dark-bg-secondary transition border border-dark-border"
+            className="px-3 sm:px-4 py-2 bg-dark-bg-hover text-dark-text rounded-lg hover:bg-dark-bg-secondary transition border border-dark-border text-sm sm:text-base"
             disabled={loading}
           >
             Clear
@@ -587,8 +587,8 @@ function AnchorSection({ topic, onAddProblems }) {
         </div>
       </form>
 
-      <div className="mt-4 pt-4 border-t border-dark-border">
-        <p className="text-xs text-dark-text-muted mb-2">Quick tips:</p>
+      <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-dark-border">
+        <p className="text-xs text-dark-text-muted mb-1.5 sm:mb-2">Quick tips:</p>
         <ul className="text-xs text-dark-text-muted space-y-1">
           <li>• You can add as many problems as you want, not just 2</li>
           <li>• Problems can be from any topic, not just today's suggested topic</li>

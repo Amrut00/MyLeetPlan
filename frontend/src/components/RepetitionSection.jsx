@@ -4,24 +4,24 @@ import { HiOutlineArrowPath, HiOutlineSparkles } from 'react-icons/hi2';
 function RepetitionSection({ topic, problems, onMarkComplete, onUpdate }) {
   return (
     <div className="bg-dark-bg-tertiary rounded-lg shadow-sm border border-dark-border p-3 sm:p-4">
-      <div className="flex items-center gap-2 mb-3">
-        <h2 className="text-xl sm:text-2xl font-bold text-dark-text flex items-center gap-2">
-          <HiOutlineArrowPath className="w-6 h-6" />
+      <div className="flex items-center gap-2 mb-2.5 sm:mb-3">
+        <h2 className="text-lg sm:text-2xl font-bold text-dark-text flex items-center gap-2">
+          <HiOutlineArrowPath className="w-5 h-5 sm:w-6 sm:h-6" />
           <span>Repetition: {topic}</span>
         </h2>
         {problems.length > 0 && (
-          <span className="px-2 py-0.5 bg-indigo-900/30 text-indigo-300 rounded-full text-xs font-semibold border border-indigo-700/30">
+          <span className="px-1.5 py-0.5 sm:px-2 bg-indigo-900/30 text-indigo-300 rounded-full text-[10px] sm:text-xs font-semibold border border-indigo-700/30">
             {problems.length}
           </span>
         )}
       </div>
-      <p className="text-sm text-dark-text-secondary mb-4">
+      <p className="text-xs sm:text-sm text-dark-text-secondary mb-3 sm:mb-4">
         Review and re-solve these problems from your practice plan. Check them off when completed.
       </p>
 
       {problems.length === 0 ? (
-        <div className="bg-blue-900/20 border border-blue-700/30 rounded-lg p-3">
-          <p className="text-sm text-blue-300">
+        <div className="bg-blue-900/20 border border-blue-700/30 rounded-lg p-2.5 sm:p-3">
+          <p className="text-xs sm:text-sm text-blue-300">
             <span className="flex items-center gap-2">
               <HiOutlineSparkles className="w-4 h-4" />
               <span>No repetition problems for today! Great job staying on track.</span>
@@ -29,7 +29,7 @@ function RepetitionSection({ topic, problems, onMarkComplete, onUpdate }) {
           </p>
         </div>
       ) : (
-        <div className="space-y-2.5">
+        <div className="space-y-2 sm:space-y-2.5">
           {problems.map((problem) => (
             <ProblemItemEnhanced
               key={problem.id || problem._id}

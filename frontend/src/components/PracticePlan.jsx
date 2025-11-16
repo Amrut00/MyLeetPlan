@@ -184,26 +184,26 @@ function PracticePlan({ onUpdate }) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="bg-dark-bg-tertiary rounded-lg shadow-sm border border-dark-border p-4">
-        <div className="mb-3">
-          <h2 className="text-xl sm:text-2xl font-bold text-dark-text mb-2 flex items-center gap-2">
-            <HiOutlineClipboardDocumentList className="w-6 h-6" />
+    <div className="space-y-3 sm:space-y-4">
+      <div className="bg-dark-bg-tertiary rounded-lg shadow-sm border border-dark-border p-3 sm:p-4">
+        <div className="mb-2.5 sm:mb-3">
+          <h2 className="text-lg sm:text-2xl font-bold text-dark-text mb-1.5 sm:mb-2 flex items-center gap-2">
+            <HiOutlineClipboardDocumentList className="w-5 h-5 sm:w-6 sm:h-6" />
             <span>Practice Plan</span>
           </h2>
-          <p className="text-sm text-dark-text-secondary">
+          <p className="text-xs sm:text-sm text-dark-text-secondary">
             Customize your weekly practice schedule. Set anchor topics (new problems) and repetition topics (review problems) for each day.
           </p>
         </div>
 
         <div className="overflow-x-auto border border-dark-border rounded-lg">
-          <table className="w-full border-collapse">
+          <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="bg-indigo-900/30 border-b-2 border-indigo-700/30">
-                <th className="px-4 py-3 text-left text-sm font-semibold text-dark-text">Day</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-dark-text">Anchor Topic</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-dark-text">Repetition Topic</th>
-                <th className="px-4 py-3 text-center text-sm font-semibold text-dark-text">Actions</th>
+                <th className="px-3 sm:px-4 py-2.5 sm:py-3 text-left text-xs sm:text-sm font-semibold text-dark-text">Day</th>
+                <th className="px-3 sm:px-4 py-2.5 sm:py-3 text-left text-xs sm:text-sm font-semibold text-dark-text">Anchor Topic</th>
+                <th className="px-3 sm:px-4 py-2.5 sm:py-3 text-left text-xs sm:text-sm font-semibold text-dark-text">Repetition Topic</th>
+                <th className="px-3 sm:px-4 py-2.5 sm:py-3 text-center text-xs sm:text-sm font-semibold text-dark-text">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -224,13 +224,13 @@ function PracticePlan({ onUpdate }) {
                         : 'bg-dark-bg-tertiary hover:bg-dark-bg-hover'
                     }`}
                   >
-                    <td className="px-4 py-3">
-                      <span className="font-medium text-dark-text">
+                    <td className="px-3 sm:px-4 py-2.5 sm:py-3">
+                      <span className="font-medium text-dark-text text-sm sm:text-base">
                         {dayName}
-                        {isToday && <span className="ml-2 text-xs text-blue-400 font-semibold">(Today)</span>}
+                        {isToday && <span className="ml-2 text-[11px] sm:text-xs text-blue-400 font-semibold">(Today)</span>}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 sm:px-4 py-2.5 sm:py-3">
                       {isEditing ? (
                         <div>
                           <select
@@ -264,12 +264,12 @@ function PracticePlan({ onUpdate }) {
                           )}
                         </div>
                       ) : (
-                        <span className="text-dark-text-secondary">
+                        <span className="text-dark-text-secondary text-sm sm:text-base">
                           {plan?.anchorTopic || <span className="text-dark-text-muted italic">Not set</span>}
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 sm:px-4 py-2.5 sm:py-3">
                       {isEditing ? (
                         <div>
                           <select
@@ -302,12 +302,12 @@ function PracticePlan({ onUpdate }) {
                           )}
                         </div>
                       ) : (
-                        <span className="text-dark-text-secondary">
+                        <span className="text-dark-text-secondary text-sm sm:text-base">
                           {plan?.repetitionTopic || <span className="text-dark-text-muted italic">Not set</span>}
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-center">
+                    <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-center">
                       {isEditing ? (
                         <div className="flex gap-2 justify-center">
                           <button
@@ -315,7 +315,7 @@ function PracticePlan({ onUpdate }) {
                             disabled={!editData.anchorTopic || !editData.repetitionTopic || 
                                      (editData.anchorTopic === 'Other' && !customTopic.anchor.trim()) ||
                                      (editData.repetitionTopic === 'Other' && !customTopic.repetition.trim())}
-                            className="px-3 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-dark-bg-hover disabled:text-dark-text-muted disabled:cursor-not-allowed transition text-sm font-medium"
+                            className="px-3 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-dark-bg-hover disabled:text-dark-text-muted disabled:cursor-not-allowed transition text-xs sm:text-sm font-medium"
                           >
                             <span className="flex items-center gap-1.5">
                               <HiOutlineCheck className="w-4 h-4" />
@@ -324,7 +324,7 @@ function PracticePlan({ onUpdate }) {
                           </button>
                           <button
                             onClick={handleCancel}
-                            className="px-3 py-1 bg-dark-bg-hover text-dark-text rounded-lg hover:bg-dark-bg-secondary transition text-sm border border-dark-border"
+                            className="px-3 py-1 bg-dark-bg-hover text-dark-text rounded-lg hover:bg-dark-bg-secondary transition text-xs sm:text-sm border border-dark-border"
                           >
                             Cancel
                           </button>
@@ -333,7 +333,7 @@ function PracticePlan({ onUpdate }) {
                         <div className="flex gap-2 justify-center">
                           <button
                             onClick={() => handleEdit(dayOfWeek)}
-                            className="px-3 py-1 text-indigo-400 hover:bg-dark-bg-hover rounded-lg transition text-sm font-medium"
+                            className="px-3 py-1 text-indigo-400 hover:bg-dark-bg-hover rounded-lg transition text-xs sm:text-sm font-medium"
                             title="Edit"
                           >
                             <span className="flex items-center gap-1.5">
@@ -344,7 +344,7 @@ function PracticePlan({ onUpdate }) {
                           {plan && (
                             <button
                               onClick={() => handleDelete(plan._id, dayName)}
-                              className="px-3 py-1 text-red-400 hover:bg-dark-bg-hover rounded-lg transition text-sm font-medium"
+                              className="px-3 py-1 text-red-400 hover:bg-dark-bg-hover rounded-lg transition text-xs sm:text-sm font-medium"
                               title="Delete"
                             >
                               <HiOutlineTrash className="w-4 h-4" />
@@ -360,12 +360,12 @@ function PracticePlan({ onUpdate }) {
           </table>
         </div>
 
-        <div className="mt-4 p-3 bg-blue-900/20 border border-blue-700/30 rounded-lg">
-          <h3 className="font-semibold text-blue-300 mb-1.5 text-sm flex items-center gap-1.5">
+        <div className="mt-3 sm:mt-4 p-3 bg-blue-900/20 border border-blue-700/30 rounded-lg">
+          <h3 className="font-semibold text-blue-300 mb-1.5 text-xs sm:text-sm flex items-center gap-1.5">
             <HiOutlineLightBulb className="w-4 h-4" />
             <span>How it works:</span>
           </h3>
-          <ul className="text-xs sm:text-sm text-blue-200 space-y-0.5">
+          <ul className="text-[11px] sm:text-xs text-blue-200 space-y-0.5">
             <li>• <strong>Anchor Topic:</strong> The topic for new problems you'll learn today</li>
             <li>• <strong>Repetition Topic:</strong> The topic for problems you'll review (from 3 days ago)</li>
             <li>• You can use any topic, including custom topics you've created</li>

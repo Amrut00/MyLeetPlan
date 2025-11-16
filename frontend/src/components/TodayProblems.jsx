@@ -54,7 +54,7 @@ function TodayProblems({ anchorTopic, onAddProblems, onUpdate }) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* Add New Problem Section */}
       <AnchorSection 
         topic={anchorTopic} 
@@ -72,19 +72,19 @@ function TodayProblems({ anchorTopic, onAddProblems, onUpdate }) {
       {/* Today's Added Problems */}
       {!loading && todayProblems.length > 0 && (
         <div className="bg-dark-bg-tertiary rounded-lg shadow-sm border border-dark-border p-3 sm:p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <h2 className="text-xl sm:text-2xl font-bold text-dark-text flex items-center gap-2">
-              <HiOutlineDocumentText className="w-6 h-6" />
+          <div className="flex items-center gap-2 mb-2.5 sm:mb-3">
+            <h2 className="text-lg sm:text-2xl font-bold text-dark-text flex items-center gap-2">
+              <HiOutlineDocumentText className="w-5 h-5 sm:w-6 sm:h-6" />
               <span>Problems Added Today</span>
             </h2>
-            <span className="px-2 py-0.5 bg-green-900/30 text-green-300 rounded-full text-xs font-semibold border border-green-700/30">
+            <span className="px-1.5 py-0.5 sm:px-2 bg-green-900/30 text-green-300 rounded-full text-[10px] sm:text-xs font-semibold border border-green-700/30">
               {todayProblems.length}
             </span>
           </div>
-          <p className="text-sm text-dark-text-secondary mb-4">
+          <p className="text-xs sm:text-sm text-dark-text-secondary mb-3 sm:mb-4">
             These are the problems you've added today. You can edit their topic, difficulty, or add notes.
           </p>
-          <div className="space-y-2.5">
+          <div className="space-y-2 sm:space-y-2.5">
             {todayProblems.map((problem) => (
               <ProblemItemEnhanced
                 key={problem._id}
@@ -98,8 +98,8 @@ function TodayProblems({ anchorTopic, onAddProblems, onUpdate }) {
       )}
 
       {!loading && todayProblems.length === 0 && (
-        <div className="bg-blue-900/20 border border-blue-700/30 rounded-lg p-4 text-center">
-          <p className="text-sm text-blue-300">
+        <div className="bg-blue-900/20 border border-blue-700/30 rounded-lg p-3 sm:p-4 text-center">
+          <p className="text-xs sm:text-sm text-blue-300">
             <span className="flex items-center justify-center gap-2">
               <span>No problems added today yet. Add your first problem above!</span>
               <HiOutlineRocketLaunch className="w-4 h-4" />

@@ -17,7 +17,9 @@ import {
   HiOutlineCalendar,
   HiOutlineClipboardDocumentList,
   HiOutlineChartBar,
-  HiOutlineSparkles
+  HiOutlineSparkles,
+  HiOutlineBars3,
+  HiOutlineXMark
 } from 'react-icons/hi2';
 
 function Dashboard() {
@@ -28,6 +30,8 @@ function Dashboard() {
   const [refreshKey, setRefreshKey] = useState(0); // For calendar refresh
   const [selectedDate, setSelectedDate] = useState(null); // For date navigation from calendar
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isCalendarCardOpen, setIsCalendarCardOpen] = useState(false);
 
   const fetchDashboard = async (silent = false) => {
     try {
@@ -148,7 +152,7 @@ function Dashboard() {
       {/* Full Width Navbar */}
       <div className="w-full bg-dark-bg-secondary shadow-lg sticky top-0 z-10 border-b border-dark-border">
         <div className="w-full px-2 sm:px-3 lg:px-4 py-2.5">
-          <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-4 min-h-[60px]">
+          <div className="flex items-center justify-between lg:justify-start gap-3 lg:gap-4 min-h-[60px] w-full">
             {/* Website Name - Left */}
             <div className="flex-shrink-0 flex items-center gap-2.5">
               <div className="bg-dark-bg-tertiary rounded-lg p-2 shadow-lg border border-dark-border">
@@ -162,8 +166,18 @@ function Dashboard() {
               </div>
             </div>
 
+            {/* Mobile Hamburger - Right on small screens */}
+            <button
+              type="button"
+              aria-label="Open navigation menu"
+              className="ml-auto inline-flex items-center justify-center rounded-lg p-2 text-dark-text hover:text-white hover:bg-dark-bg-tertiary border border-dark-border focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:hidden"
+              onClick={() => setIsMobileMenuOpen(true)}
+            >
+              <HiOutlineBars3 className="w-6 h-6" />
+            </button>
+
             {/* Navigation Tabs - Centered in navbar */}
-            <div className="flex-1 flex justify-center items-center">
+            <div className="hidden sm:flex flex-1 justify-center items-center">
               <div className="inline-flex bg-dark-bg-tertiary rounded-xl p-1 gap-1 shadow-inner border border-dark-border items-center">
                     <button
                       onClick={() => setView('daily')}
@@ -229,7 +243,7 @@ function Dashboard() {
             </div>
 
             {/* Date - Right */}
-            <div className="flex-shrink-0">
+            <div className="hidden lg:block flex-shrink-0">
               <div className="flex items-center gap-3 text-dark-text">
                 <div className="bg-dark-bg-tertiary rounded-lg p-2 shadow-lg border border-dark-border">
                   <HiOutlineCalendar className="w-5 h-5 text-indigo-400" />
@@ -286,16 +300,133 @@ function Dashboard() {
         </div>
       </div>
 
+      {/* Mobile Sidebar & Backdrop (animated) */}
+      {/* Backdrop (always mounted for smooth opacity transition) */}
+      <div
+        className={`fixed inset-0 z-20 bg-black/50 backdrop-blur-sm transition-opacity duration-300 sm:hidden ${isMobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        onClick={() => setIsMobileMenuOpen(false)}
+        aria-hidden={!isMobileMenuOpen}
+      />
+      {/* Sidebar Panel (always mounted for smooth slide transition) */}
+      <div
+        className={`fixed right-0 top-0 bottom-0 z-30 w-72 max-w-[80vw] bg-dark-bg-secondary border-l border-dark-border shadow-2xl transform transition-transform duration-300 ease-out sm:hidden ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Mobile navigation menu"
+      >
+        <div className="flex h-full flex-col">
+          <div className="flex items-center justify-between px-3 py-3 border-b border-dark-border">
+            <div className="flex items-center gap-2.5">
+              <div className="bg-dark-bg-tertiary rounded-lg p-2 shadow-lg border border-dark-border">
+                <HiOutlineBookOpen className="w-6 h-6 text-indigo-400" />
+              </div>
+              <h2 className="text-lg font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
+                MyLeetPlan
+              </h2>
+            </div>
+            <button
+              type="button"
+              aria-label="Close navigation menu"
+              className="inline-flex items-center justify-center rounded-lg p-2 text-dark-text hover:text-white hover:bg-dark-bg-tertiary border border-dark-border focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              <HiOutlineXMark className="w-6 h-6" />
+            </button>
+          </div>
+          <nav className="p-3 space-y-2">
+            <button
+              onClick={() => { setView('daily'); setIsMobileMenuOpen(false); }}
+              className={`w-full text-left px-3 py-2 rounded-lg transition-all duration-200 font-medium text-sm flex items-center gap-2 border ${view === 'daily' ? 'bg-dark-bg-hover border-dark-border-light' : 'border-dark-border hover:bg-dark-bg-hover text-dark-text-secondary hover:text-dark-text'}`}
+            >
+              <HiOutlineCalendar className={`w-5 h-5 ${view === 'daily' ? 'text-blue-500' : ''}`} />
+              <span className={view === 'daily' ? 'bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent' : ''}>Daily</span>
+            </button>
+            <button
+              onClick={() => { setView('all'); setIsMobileMenuOpen(false); }}
+              className={`w-full text-left px-3 py-2 rounded-lg transition-all duration-200 font-medium text-sm flex items-center gap-2 border ${view === 'all' ? 'bg-dark-bg-hover border-dark-border-light' : 'border-dark-border hover:bg-dark-bg-hover text-dark-text-secondary hover:text-dark-text'}`}
+            >
+              <HiOutlineClipboardDocumentList className={`w-5 h-5 ${view === 'all' ? 'text-blue-500' : ''}`} />
+              <span className={view === 'all' ? 'bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent' : ''}>All Problems</span>
+            </button>
+            <button
+              onClick={() => { setView('stats'); setIsMobileMenuOpen(false); }}
+              className={`w-full text-left px-3 py-2 rounded-lg transition-all duration-200 font-medium text-sm flex items-center gap-2 border ${view === 'stats' ? 'bg-dark-bg-hover border-dark-border-light' : 'border-dark-border hover:bg-dark-bg-hover text-dark-text-secondary hover:text-dark-text'}`}
+            >
+              <HiOutlineChartBar className={`w-5 h-5 ${view === 'stats' ? 'text-blue-500' : ''}`} />
+              <span className={view === 'stats' ? 'bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent' : ''}>Statistics</span>
+            </button>
+            <button
+              onClick={() => { setView('plan'); setIsMobileMenuOpen(false); }}
+              className={`w-full text-left px-3 py-2 rounded-lg transition-all duration-200 font-medium text-sm flex items-center gap-2 border ${view === 'plan' ? 'bg-dark-bg-hover border-dark-border-light' : 'border-dark-border hover:bg-dark-bg-hover text-dark-text-secondary hover:text-dark-text'}`}
+            >
+              <HiOutlineSparkles className={`w-5 h-5 ${view === 'plan' ? 'text-blue-500' : ''}`} />
+              <span className={view === 'plan' ? 'bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent' : ''}>Practice Plan</span>
+            </button>
+          </nav>
+          {/* Date/Time - Footer of Sidebar */}
+          <div className="mt-auto px-3 pt-2 pb-3 border-t border-dark-border">
+            <div className="flex items-center gap-3 text-dark-text">
+              <div className="bg-dark-bg-tertiary rounded-lg p-2 shadow-lg border border-dark-border">
+                <HiOutlineCalendar className="w-5 h-5 text-indigo-400" />
+              </div>
+              <div className="text-left">
+                <p className="text-base font-bold leading-tight text-dark-text">
+                  {(() => {
+                    const [year, month, day] = dashboardData.date.split('-').map(Number);
+                    const date = new Date(year, month - 1, day);
+                    const today = new Date();
+                    const isToday = date.toDateString() === today.toDateString();
+                    
+                    if (isToday) {
+                      let hours = currentTime.getHours();
+                      const ampm = hours >= 12 ? 'PM' : 'AM';
+                      hours = hours % 12;
+                      hours = hours ? hours : 12;
+                      const minutes = currentTime.getMinutes().toString().padStart(2, '0');
+                      const seconds = currentTime.getSeconds().toString().padStart(2, '0');
+                      const timeString = `${hours}:${minutes}:${seconds} ${ampm}`;
+                      return (
+                        <span className="flex items-baseline gap-2">
+                          <span>Today</span>
+                          <span className="text-indigo-400 font-mono text-sm font-normal">{timeString}</span>
+                        </span>
+                      );
+                    }
+                    
+                    return date.toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric'
+                    });
+                  })()}
+                </p>
+                <p className="text-xs text-dark-text-secondary font-medium leading-tight mt-0.5">
+                  {(() => {
+                    const [year, month, day] = dashboardData.date.split('-').map(Number);
+                    const date = new Date(year, month - 1, day);
+                    return date.toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric'
+                    });
+                  })()}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Main Content */}
-      <div className="w-full px-2 sm:px-3 lg:px-4 py-3 sm:py-4 h-[calc(100vh-80px)]">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-4 max-w-[1920px] mx-auto h-full">
+      <div className="w-full px-2 sm:px-3 md:px-4 py-3 sm:py-4 h-[calc(100vh-80px)]">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-4 max-w-none md:max-w-[1920px] md:mx-auto h-full w-full">
           {/* Left Sidebar - Quick Stats */}
           <div className="lg:col-span-2 hidden lg:block h-full overflow-y-auto pr-2 custom-scrollbar">
             <QuickStats refreshKey={refreshKey} />
           </div>
 
           {/* Main Content Area */}
-          <div className="lg:col-span-8 space-y-4 h-full overflow-y-auto pr-2 custom-scrollbar">
+          <div className="md:col-span-9 lg:col-span-8 space-y-4 h-full overflow-y-auto pr-0 md:pr-2 custom-scrollbar">
 
             {view === 'stats' ? (
               <Statistics />
@@ -354,12 +485,68 @@ function Dashboard() {
           </div>
 
           {/* Calendar Sidebar */}
-          <div className="lg:col-span-2 space-y-3 h-full overflow-y-auto custom-scrollbar">
+          <div className="md:col-span-3 lg:col-span-2 space-y-3 h-full overflow-y-auto custom-scrollbar hidden md:block">
             <ProgressCalendar 
               key={refreshKey}
               onDateClick={(dateStr) => {
                 setSelectedDate(dateStr);
                 setView('all');
+              }}
+            />
+            <DailyMotivation />
+            <QuickTips topic={dashboardData?.anchorTopic} />
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile-only Calendar Bubble (FAB) */}
+      <button
+        type="button"
+        aria-label="Open calendar"
+        className="fixed bottom-4 right-4 md:hidden z-20 rounded-full p-4 bg-indigo-600 text-white shadow-lg border border-dark-border hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+        onClick={() => setIsCalendarCardOpen(true)}
+      >
+        <HiOutlineCalendar className="w-6 h-6" />
+      </button>
+
+      {/* Mobile Calendar Card Overlay */}
+      <div
+        className={`fixed inset-0 z-30 md:hidden transition-opacity duration-200 ${isCalendarCardOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        aria-hidden={!isCalendarCardOpen}
+        onClick={() => setIsCalendarCardOpen(false)}
+      >
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+      </div>
+      <div
+        className={`fixed inset-x-0 bottom-0 z-40 md:hidden transform transition-transform duration-300 ease-out ${isCalendarCardOpen ? 'translate-y-0' : 'translate-y-full'}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Calendar card"
+      >
+        <div className="mx-2 mb-2 rounded-2xl bg-dark-bg-secondary border border-dark-border shadow-2xl overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-3 border-b border-dark-border">
+            <div className="flex items-center gap-2">
+              <div className="bg-dark-bg-tertiary rounded-lg p-2 shadow-lg border border-dark-border">
+                <HiOutlineCalendar className="w-5 h-5 text-indigo-400" />
+              </div>
+              <h3 className="text-base font-bold text-dark-text">Progress Calendar</h3>
+            </div>
+            <button
+              type="button"
+              aria-label="Close calendar"
+              className="inline-flex items-center justify-center rounded-lg p-2 text-dark-text hover:text-white hover:bg-dark-bg-tertiary border border-dark-border focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              onClick={() => setIsCalendarCardOpen(false)}
+            >
+              <HiOutlineXMark className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="p-3 space-y-3 max-h-[70vh] overflow-y-auto custom-scrollbar">
+            <ProgressCalendar 
+              key={refreshKey}
+              onDateClick={(dateStr) => {
+                setSelectedDate(dateStr);
+                setView('all');
+                setIsCalendarCardOpen(false);
               }}
             />
             <DailyMotivation />
