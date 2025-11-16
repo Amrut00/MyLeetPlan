@@ -196,6 +196,30 @@ router.get('/calendar', async (req, res) => {
       { $sort: { _id: 1 } }
     ]);
 
+    // Also aggregate problems added per day (use createdAt/addedDate as fallback)
+    const addedData = await Problem.aggregate([
+      {
+        $match: {
+          $or: [
+            { createdAt: { $gte: startDateUTC } },
+            { addedDate: { $gte: startDateUTC } }
+          ]
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: {
+              format: '%Y-%m-%d',
+              date: { $ifNull: ['$createdAt', '$addedDate'] },
+              timezone: timezoneString
+            }
+          },
+          added: { $sum: 1 }
+        }
+      }
+    ]);
+
     // Build a map for quick lookup
     const dataMap = {};
     calendarData.forEach(item => {
@@ -204,6 +228,18 @@ router.get('/calendar', async (req, res) => {
         count: item.count || 0,
         completed: item.completed || 0
       };
+    });
+    addedData.forEach(item => {
+      if (dataMap[item._id]) {
+        dataMap[item._id].added = item.added || 0;
+      } else {
+        dataMap[item._id] = {
+          date: item._id,
+          count: 0,
+          completed: 0,
+          added: item.added || 0
+        };
+      }
     });
 
     // Convert to array and fill in missing dates with 0
@@ -220,7 +256,8 @@ router.get('/calendar', async (req, res) => {
         result.push({
           date: dateStr,
           count: 0,
-          completed: 0
+          completed: 0,
+          added: 0
         });
       }
       cursor.setUTCDate(cursor.getUTCDate() + 1);

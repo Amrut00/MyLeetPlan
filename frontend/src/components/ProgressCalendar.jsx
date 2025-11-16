@@ -63,15 +63,17 @@ function ProgressCalendar({ onDateClick }) {
     // Add all days of the month
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(year, month, day);
-      // Format date as YYYY-MM-DD using local timezone
-      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      const dayData = calendarData[dateStr] || { count: 0, completed: 0 };
+      // Format date as YYYY-MM-DD using UTC to match backend keys
+      const dateUTC = new Date(Date.UTC(year, month, day));
+      const dateStr = `${dateUTC.getUTCFullYear()}-${String(dateUTC.getUTCMonth() + 1).padStart(2, '0')}-${String(dateUTC.getUTCDate()).padStart(2, '0')}`;
+      const dayData = calendarData[dateStr] || { count: 0, completed: 0, added: 0 };
       days.push({
         day,
         date: dateStr,
         dateObj: date,
         count: dayData.count || 0,
-        completed: dayData.completed || 0
+        completed: dayData.completed || 0,
+        added: dayData.added || 0
       });
     }
 
@@ -91,8 +93,10 @@ function ProgressCalendar({ onDateClick }) {
   };
 
   const isToday = (dateStr) => {
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    // Compare using UTC strings for consistency with backend
+    const now = new Date();
+    const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const todayStr = `${todayUTC.getUTCFullYear()}-${String(todayUTC.getUTCMonth() + 1).padStart(2, '0')}-${String(todayUTC.getUTCDate()).padStart(2, '0')}`;
     return todayStr === dateStr;
   };
 
@@ -169,9 +173,19 @@ function ProgressCalendar({ onDateClick }) {
             return <div key={`empty-${index}`} className="aspect-square"></div>;
           }
 
-          const { day, date, count, completed } = dayData;
+          const { day, date, count, completed, added } = dayData;
           const todayClass = isToday(date) ? 'ring-1 ring-indigo-500' : '';
           const hasProblems = count > 0;
+          // Determine past-or-today using UTC comparison
+          const now = new Date();
+          const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+          const cellUTC = new Date(date + 'T00:00:00Z');
+          const isPastOrToday = cellUTC <= todayUTC;
+          const isTodayCell = isToday(date);
+          const addedNotCompleted = added > 0 && completed === 0;
+          const hasPendingWithCompletions = completed > 0 && added > completed;
+          // Red dot should not show for current day
+          const noActivity = added === 0 && completed === 0 && isPastOrToday && !isTodayCell;
 
           return (
             <div
@@ -182,7 +196,7 @@ function ProgressCalendar({ onDateClick }) {
                 }
               }}
               className={`aspect-square rounded flex flex-col items-center justify-center transition-all hover:scale-105 cursor-pointer relative p-0.5 ${todayClass} ${hasProblems ? getIntensityColor(count) : 'bg-dark-bg-hover hover:bg-dark-bg-secondary'}`}
-              title={`${new Date(date).toLocaleDateString()}: ${getIntensityText(count)} solved. Click to view problems.`}
+              title={`${new Date(date + 'T00:00:00Z').toLocaleDateString()}: ${getIntensityText(count)} solved. Click to view problems.`}
             >
               <span className={`text-[10px] font-semibold leading-tight ${hasProblems ? 'text-white' : 'text-dark-text-muted'}`}>
                 {day}
@@ -191,6 +205,18 @@ function ProgressCalendar({ onDateClick }) {
                 <span className="text-[8px] text-white/90 font-bold leading-none mt-0.5">
                   {count}
                 </span>
+              )}
+              {/* Yellow mark: added but not completed (takes precedence over red) */}
+              {addedNotCompleted && (
+                <span className="absolute bottom-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-yellow-400/80 ring-1 ring-yellow-500/40" title="Problems added but none completed"></span>
+              )}
+              {/* Orange mark: some completed, some still pending (added > completed) */}
+              {!addedNotCompleted && hasPendingWithCompletions && (
+                <span className="absolute bottom-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-orange-400/90 ring-1 ring-orange-500/50" title="Some completed, some pending"></span>
+              )}
+              {/* Red mark: no added and no completed (past or today), only if not yellow */}
+              {!addedNotCompleted && noActivity && (
+                <span className="absolute bottom-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-red-500/80 ring-1 ring-red-500/40" title="No activity"></span>
               )}
             </div>
           );
