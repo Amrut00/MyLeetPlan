@@ -29,110 +29,65 @@ router.get('/dashboard', async (req, res) => {
     todayEndUTC.setUTCHours(23, 59, 59, 999);
     const todayStr = formatDate(new Date(todayStartUTC));
 
-    // Get repetition problems: anchor problems where repetitionDate is TODAY
-    // These are problems that are scheduled for repetition today
-    // BACKLOG LOGIC: If a repetition problem is not completed on its scheduled day,
-    // it becomes a backlog (repetitionDate < today and isCompleted: false)
+    // Get repetition problems: Create separate repetition entries for problems due today
+    // This ensures original anchor problems' completion status remains intact
     const tomorrow = new Date(todayEndUTC);
     
-    // Reset problems that were completed before their repetition date
-    // This ensures problems that were completed when originally added show up for repetition
-    const problemsToReset = await Problem.countDocuments({
+    // Find anchor problems that are due for repetition today
+    const anchorProblemsDueForRepetition = await Problem.find({
       type: 'anchor',
-      isCompleted: true,
       repetitionDate: {
         $gte: todayStartUTC,
         $lt: tomorrow
-      },
-      // Only reset if completedDate exists and was completed before the repetition date
-      $and: [
-        { completedDate: { $exists: true, $ne: null } },
-        {
-          $expr: {
-            $lt: [
-              {
-                $dateToString: {
-                  format: '%Y-%m-%d',
-                  date: '$completedDate',
-                  timezone: 'UTC'
-                }
-              },
-              {
-                $dateToString: {
-                  format: '%Y-%m-%d',
-                  date: '$repetitionDate',
-                  timezone: 'UTC'
-                }
-              }
-            ]
-          }
-        }
-      ]
+      }
     });
 
-    // Only run update if there are problems that need resetting
-    if (problemsToReset > 0) {
-      try {
-        await Problem.updateMany(
-          {
-            type: 'anchor',
-            isCompleted: true,
-            repetitionDate: {
-              $gte: todayStartUTC,
-              $lt: tomorrow
-            },
-            // Only reset if completedDate exists and was completed before the repetition date
-            $and: [
-              { completedDate: { $exists: true, $ne: null } },
-              {
-                $expr: {
-                  $lt: [
-                    {
-                      $dateToString: {
-                        format: '%Y-%m-%d',
-                        date: '$completedDate',
-                        timezone: 'UTC'
-                      }
-                    },
-                    {
-                      $dateToString: {
-                        format: '%Y-%m-%d',
-                        date: '$repetitionDate',
-                        timezone: 'UTC'
-                      }
-                    }
-                  ]
-                }
-              }
-            ]
-          },
-          {
-            $set: { isCompleted: false } // Reset to false so it shows for repetition
-          }
-        );
-      } catch (updateError) {
-        // Log error but don't fail the entire request
-        console.error('Error resetting problems for repetition:', updateError);
-        // Continue - problems will still be fetched, just might not be reset
+    // Create repetition entries for problems that don't have one yet
+    for (const anchorProblem of anchorProblemsDueForRepetition) {
+      // Check if a repetition entry already exists for today
+      const existingRepetition = await Problem.findOne({
+        type: 'repetition',
+        originalProblemId: anchorProblem._id,
+        repetitionDate: {
+          $gte: todayStartUTC,
+          $lt: tomorrow
+        }
+      });
+
+      // If no repetition entry exists, create one
+      if (!existingRepetition) {
+        await Problem.create({
+          problemNumber: anchorProblem.problemNumber,
+          problemSlug: anchorProblem.problemSlug,
+          problemTitle: anchorProblem.problemTitle,
+          topic: anchorProblem.topic,
+          difficulty: anchorProblem.difficulty,
+          notes: anchorProblem.notes,
+          addedDate: anchorProblem.addedDate, // Keep original added date
+          repetitionDate: anchorProblem.repetitionDate,
+          type: 'repetition',
+          originalProblemId: anchorProblem._id,
+          isCompleted: false,
+          solveCount: anchorProblem.solveCount || 0
+        });
       }
     }
     
-    // Find repetition problems: ONLY problems where repetitionDate is TODAY
-    // This is the source of truth - if repetitionDate is today, it's due for repetition
+    // Find repetition problems: ONLY repetition type entries where repetitionDate is TODAY
     const repetitionProblems = await Problem.find({
-      type: 'anchor',
+      type: 'repetition',
       repetitionDate: {
         $gte: todayStartUTC,
         $lt: tomorrow
       },
-      isCompleted: false // Only show if not yet completed in repetition
+      isCompleted: false // Only show if not yet completed
     }).sort({ repetitionDate: 1, createdAt: 1 });
 
-    // Get backlog: ONLY repetition problems (anchor problems) where repetitionDate is in the past
+    // Get backlog: ONLY repetition type entries where repetitionDate is in the past
     // and they were NOT completed on their scheduled repetition day
     // BACKLOG = Problems that were due for repetition but weren't completed on that day
     const backlogProblems = await Problem.find({
-      type: 'anchor',
+      type: 'repetition',
       repetitionDate: {
         $lt: todayStartUTC // repetitionDate is in the past
       },
@@ -147,14 +102,27 @@ router.get('/dashboard', async (req, res) => {
       }
     });
 
-    // Get count of problems solved today (includes both new problems and repetition problems)
-    const todaySolvedCount = await Problem.countDocuments({
+    // Get count of problems solved today (includes both anchor and repetition problems)
+    // Count anchor problems completed today + repetition problems completed today
+    const todaySolvedAnchorCount = await Problem.countDocuments({
+      type: 'anchor',
       completedDate: {
         $gte: todayStartUTC,
         $lt: tomorrow
       },
       isCompleted: true
     });
+    
+    const todaySolvedRepetitionCount = await Problem.countDocuments({
+      type: 'repetition',
+      repetitionCompletedDate: {
+        $gte: todayStartUTC,
+        $lt: tomorrow
+      },
+      isCompleted: true
+    });
+    
+    const todaySolvedCount = todaySolvedAnchorCount + todaySolvedRepetitionCount;
 
     res.json({
       date: todayStr,

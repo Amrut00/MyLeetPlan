@@ -1,32 +1,116 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { getCalendarData } from '../services/api';
 import { HiOutlineCalendar, HiOutlineLightBulb } from 'react-icons/hi2';
 
-function ProgressCalendar({ onDateClick }) {
-  const [calendarData, setCalendarData] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+// Global cache for calendar data (shared across all instances)
+let globalCalendarCache = null;
+let globalCalendarCacheTime = null;
+const CALENDAR_CACHE_TTL = 25000; // 25 seconds (slightly less than backend cache)
 
-  useEffect(() => {
-    fetchCalendarData();
+function ProgressCalendar({ onDateClick }) {
+  const [calendarData, setCalendarData] = useState(() => {
+    // Initialize with cache if available
+    return globalCalendarCache || {};
+  });
+  const [loading, setLoading] = useState(() => {
+    // Only show loading if cache is stale or missing
+    const now = Date.now();
+    const hasValidCache = globalCalendarCache && globalCalendarCacheTime && 
+                         (now - globalCalendarCacheTime) < CALENDAR_CACHE_TTL;
+    return !hasValidCache;
+  });
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const isMountedRef = useRef(true);
+  const fetchingRef = useRef(false);
+
+  // Create a stable month key for dependency tracking
+  const monthKey = useMemo(() => {
+    return `${currentMonth.getFullYear()}-${currentMonth.getMonth()}`;
   }, [currentMonth]);
 
+  useEffect(() => {
+    isMountedRef.current = true;
+    
+    // If we have cached data, use it immediately
+    if (globalCalendarCache && Object.keys(globalCalendarCache).length > 0) {
+      const now = Date.now();
+      if (globalCalendarCacheTime && (now - globalCalendarCacheTime) < CALENDAR_CACHE_TTL) {
+        setCalendarData(globalCalendarCache);
+        setLoading(false);
+      }
+    }
+    
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   const fetchCalendarData = async () => {
+    // Prevent concurrent fetches
+    if (fetchingRef.current) {
+      return;
+    }
+    
+    // Check global cache first
+    const now = Date.now();
+    if (globalCalendarCache && globalCalendarCacheTime && (now - globalCalendarCacheTime) < CALENDAR_CACHE_TTL) {
+      if (isMountedRef.current) {
+        setCalendarData(globalCalendarCache);
+        setLoading(false);
+      }
+      return;
+    }
+
     try {
+      fetchingRef.current = true;
+      
+      if (isMountedRef.current) {
       setLoading(true);
+      }
+      
       const data = await getCalendarData();
+      
       // Convert array to object for easy lookup
       const dataMap = {};
+      if (Array.isArray(data)) {
       data.forEach(item => {
         dataMap[item.date] = item;
       });
+      }
+      
+      // Update global cache first (always, even if component unmounted)
+      globalCalendarCache = dataMap;
+      globalCalendarCacheTime = now;
+      
+      // Update state if component is still mounted
+      if (isMountedRef.current) {
+        setCalendarData(dataMap);
+        setLoading(false);
+      } else {
+        // Even if unmounted, we should try to update state in case it remounts quickly
+        // Use setTimeout to ensure we're in the next render cycle
+        setTimeout(() => {
+          if (isMountedRef.current) {
       setCalendarData(dataMap);
+            setLoading(false);
+          }
+        }, 0);
+      }
     } catch (error) {
       console.error('Error fetching calendar data:', error);
-    } finally {
+      if (isMountedRef.current) {
       setLoading(false);
     }
+    } finally {
+      fetchingRef.current = false;
+    }
   };
+
+  // Fetch calendar data on mount and when month changes
+  useEffect(() => {
+    fetchCalendarData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [monthKey]);
 
   const getIntensityColor = (count) => {
     if (count === 0) return 'bg-dark-bg-hover';

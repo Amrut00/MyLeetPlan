@@ -532,17 +532,17 @@ function AnchorSection({ topic, onAddProblems }) {
               <option value="Hard">Hard</option>
             </select>
           </div>
-          <div>
+          <div className="md:col-span-2">
             <label htmlFor="notes" className="block text-xs sm:text-sm font-medium text-dark-text mb-1.5 sm:mb-2">
               Notes (Optional)
             </label>
-            <input
-              type="text"
+            <textarea
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add quick notes..."
-              className="w-full px-3 sm:px-4 py-2 border border-dark-border bg-dark-bg-secondary text-dark-text rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+              placeholder="Add quick notes, thoughts, or reminders about this problem..."
+              rows={4}
+              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-dark-border bg-dark-bg-secondary text-dark-text rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm resize-y min-h-[100px] leading-relaxed"
               disabled={loading}
             />
           </div>

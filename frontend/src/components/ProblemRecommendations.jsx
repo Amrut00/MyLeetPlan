@@ -82,18 +82,6 @@ function ProblemRecommendations({ onUpdate }) {
     }
   };
 
-  const handleAddPair = async () => {
-    if (!recommendations?.recommendations?.pair) return;
-
-    const pair = recommendations.recommendations.pair;
-    
-    // Add both problems
-    for (const problem of pair) {
-      await handleAddProblem(problem);
-      // Small delay between adds
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
-  };
 
   if (loading) {
     return (
@@ -272,17 +260,6 @@ function ProblemRecommendations({ onUpdate }) {
           </div>
         ))}
       </div>
-
-      <button
-        onClick={handleAddPair}
-        disabled={Object.keys(adding).length > 0}
-        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-indigo-900/50 to-purple-900/50 text-indigo-100 rounded-lg border border-indigo-700/50 hover:from-indigo-800/60 hover:to-purple-800/60 hover:border-indigo-600/60 active:from-indigo-900/70 active:to-purple-900/70 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-      >
-        <span className="flex items-center justify-center gap-2">
-          <HiOutlineSparkles className="w-4 h-4 sm:w-5 sm:h-5" />
-          <span>{pair.length === 2 ? 'Add Both Problems to My List' : 'Add Problem to My List'}</span>
-        </span>
-      </button>
     </div>
   );
 }

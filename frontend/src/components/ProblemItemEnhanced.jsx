@@ -4,7 +4,7 @@ import { updateProblem, deleteProblem, markProblemComplete, unmarkProblemComplet
 import { HiOutlinePencil, HiOutlineTrash, HiOutlineMagnifyingGlass, HiOutlineCheckCircle, HiOutlineCheck } from 'react-icons/hi2';
 import { HiOutlineLightBulb, HiOutlineRefresh } from 'react-icons/hi';
 
-function ProblemItemEnhanced({ problem, onUpdate, showActions = true, isBacklog = false }) {
+function ProblemItemEnhanced({ problem, onUpdate, showActions = true, isBacklog = false, onEditStateChange }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
@@ -16,6 +16,27 @@ function ProblemItemEnhanced({ problem, onUpdate, showActions = true, isBacklog 
     difficulty: problem.difficulty || 'Medium',
     notes: problem.notes || '',
   });
+
+  // Update editData when problem prop changes, but only if not currently editing
+  useEffect(() => {
+    if (!isEditing) {
+      setEditData({
+        problemNumber: problem.problemNumber || '',
+        problemSlug: problem.problemSlug || '',
+        problemTitle: problem.problemTitle || '',
+        topic: problem.topic || '',
+        difficulty: problem.difficulty || 'Medium',
+        notes: problem.notes || '',
+      });
+    }
+  }, [problem.problemNumber, problem.problemSlug, problem.problemTitle, problem.topic, problem.difficulty, problem.notes, isEditing]);
+
+  // Notify parent when edit state changes
+  useEffect(() => {
+    if (onEditStateChange) {
+      onEditStateChange(problem.id, isEditing);
+    }
+  }, [isEditing, problem.id, onEditStateChange]);
   const [customTopic, setCustomTopic] = useState('');
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
@@ -286,6 +307,9 @@ function ProblemItemEnhanced({ problem, onUpdate, showActions = true, isBacklog 
       }
       
       setIsEditing(false);
+      if (onEditStateChange) {
+        onEditStateChange(problem.id, false);
+      }
       setCustomTopic('');
       setTopicWarning(null);
       toast.success('Problem updated successfully!');
@@ -319,7 +343,42 @@ function ProblemItemEnhanced({ problem, onUpdate, showActions = true, isBacklog 
     }
   };
 
+  // Check if completion status can be changed (only allowed on the same day)
+  const canChangeCompletionStatus = () => {
+    if (!problem.isCompleted) {
+      // If not completed, can always mark as complete
+      return true;
+    }
+
+    // If completed, check if completion date is today
+    const todayStart = new Date();
+    todayStart.setUTCHours(0, 0, 0, 0);
+    const todayEnd = new Date(todayStart);
+    todayEnd.setUTCHours(23, 59, 59, 999);
+
+    let completionDate;
+    if (problem.type === 'repetition') {
+      completionDate = problem.repetitionCompletedDate;
+    } else {
+      completionDate = problem.completedDate;
+    }
+
+    if (!completionDate) {
+      return true; // No completion date, allow change
+    }
+
+    const completionDateUTC = new Date(completionDate);
+    // Check if completion date is today
+    return completionDateUTC >= todayStart && completionDateUTC <= todayEnd;
+  };
+
   const handleToggleComplete = async () => {
+    // Check if we can change the status
+    if (!canChangeCompletionStatus()) {
+      toast.error('Cannot change completion status for problems completed on past days. Completion status is locked after the day has passed.');
+      return;
+    }
+
     // TEMPORARY: Handle mock data (IDs starting with 'temp-')
     // TODO: Remove this after removing temporary mock data
     if (problem.id && problem.id.toString().startsWith('temp-')) {
@@ -552,12 +611,12 @@ function ProblemItemEnhanced({ problem, onUpdate, showActions = true, isBacklog 
               <label className="block text-sm font-medium text-dark-text mb-1">
                 Notes (Optional)
               </label>
-              <input
-                type="text"
+              <textarea
                 value={editData.notes}
                 onChange={(e) => setEditData({ ...editData, notes: e.target.value })}
-                placeholder="Add quick notes..."
-                className="w-full px-3 py-2 border border-dark-border bg-dark-bg-tertiary text-dark-text rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                placeholder="Add quick notes, thoughts, or reminders about this problem..."
+                rows={4}
+                className="w-full px-3 py-2.5 border border-dark-border bg-dark-bg-tertiary text-dark-text rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-y min-h-[100px] leading-relaxed text-sm"
                 disabled={loading || fetching}
               />
             </div>
@@ -586,6 +645,9 @@ function ProblemItemEnhanced({ problem, onUpdate, showActions = true, isBacklog 
               type="button"
               onClick={() => {
                 setIsEditing(false);
+                if (onEditStateChange) {
+                  onEditStateChange(problem.id, false);
+                }
                 setEditData({
                   problemNumber: problem.problemNumber,
                   problemSlug: problem.problemSlug || '',
@@ -611,13 +673,19 @@ function ProblemItemEnhanced({ problem, onUpdate, showActions = true, isBacklog 
               <button
                 type="button"
                 onClick={handleToggleComplete}
-                disabled={loading}
+                disabled={loading || !canChangeCompletionStatus()}
                 className={`mt-1 w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
                   problem.isCompleted
                     ? 'bg-green-500/20 border-green-500/50 text-green-400 hover:bg-green-500/30'
                     : 'bg-dark-bg-tertiary border-dark-border text-transparent hover:border-indigo-500/50'
-                } disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer`}
-                title={problem.isCompleted ? 'Mark as incomplete' : 'Mark as complete'}
+                } disabled:opacity-50 disabled:cursor-not-allowed ${!canChangeCompletionStatus() ? '' : 'cursor-pointer'}`}
+                title={
+                  !canChangeCompletionStatus() 
+                    ? 'Completion status is locked for past days. You can only change it on the same day it was completed.'
+                    : problem.isCompleted 
+                    ? 'Mark as incomplete' 
+                    : 'Mark as complete'
+                }
               >
                 {problem.isCompleted && <HiOutlineCheckCircle className="w-4 h-4" />}
               </button>
@@ -657,24 +725,50 @@ function ProblemItemEnhanced({ problem, onUpdate, showActions = true, isBacklog 
               </div>
               {(problem.createdAt || problem.addedDate) && (
                 <div className="text-xs text-dark-text-muted mt-1">
-                  Added: {new Date(problem.createdAt || problem.addedDate).toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    timeZone: 'UTC'
-                  })}
-                  {problem.completedDate && (
-                    <span className="ml-2 text-green-500/70 flex items-center gap-1">
-                      <HiOutlineCheckCircle className="w-3 h-3" />
-                      <span>Completed: {new Date(problem.completedDate).toLocaleDateString('en-US', {
+                  {problem.type === 'repetition' ? (
+                    <>
+                      <span>Originally added: {new Date(problem.addedDate || problem.createdAt).toLocaleDateString('en-US', {
                         weekday: 'long',
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric',
                         timeZone: 'UTC'
                       })}</span>
-                    </span>
+                      {problem.repetitionCompletedDate && (
+                        <span className="ml-2 text-green-500/70 flex items-center gap-1">
+                          <HiOutlineCheckCircle className="w-3 h-3" />
+                          <span>Repeated: {new Date(problem.repetitionCompletedDate).toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            timeZone: 'UTC'
+                          })}</span>
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <span>Added: {new Date(problem.createdAt || problem.addedDate).toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        timeZone: 'UTC'
+                      })}</span>
+                      {problem.completedDate && (
+                        <span className="ml-2 text-green-500/70 flex items-center gap-1">
+                          <HiOutlineCheckCircle className="w-3 h-3" />
+                          <span>Completed: {new Date(problem.completedDate).toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            timeZone: 'UTC'
+                          })}</span>
+                        </span>
+                      )}
+                    </>
                   )}
                 </div>
               )}
@@ -698,7 +792,12 @@ function ProblemItemEnhanced({ problem, onUpdate, showActions = true, isBacklog 
           {showActions && (
             <div className="flex gap-2 flex-shrink-0">
               <button
-                onClick={() => setIsEditing(true)}
+                onClick={() => {
+                  setIsEditing(true);
+                  if (onEditStateChange) {
+                    onEditStateChange(problem.id, true);
+                  }
+                }}
                 className="p-2 text-indigo-400 hover:bg-dark-bg-hover rounded-lg transition"
                 title="Edit"
               >

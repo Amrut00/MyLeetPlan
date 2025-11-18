@@ -371,9 +371,19 @@ function AllProblems({ onSwitchToDaily, onUpdate, selectedDate }) {
           <p className="text-dark-text-secondary text-xs sm:text-sm">No problems found matching your filters.</p>
         </div>
       ) : (() => {
-        // Group problems by UTC date from database (createdAt preferred; fallback to addedDate)
+        // Group problems by date
+        // For repetition problems: use repetitionCompletedDate if completed, otherwise repetitionDate
+        // For anchor problems: use createdAt/addedDate (original day)
         const groupedByDate = problems.reduce((acc, problem) => {
-          const source = problem.createdAt || problem.addedDate;
+          let source;
+          if (problem.type === 'repetition') {
+            // For repetition problems, show on the day they were completed (or due if not completed)
+            source = problem.repetitionCompletedDate || problem.repetitionDate || problem.createdAt || problem.addedDate;
+          } else {
+            // For anchor problems, use original added date
+            source = problem.createdAt || problem.addedDate;
+          }
+          
           if (!source) return acc;
           const d = new Date(source);
           // Use UTC calendar day so it matches the database date

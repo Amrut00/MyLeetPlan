@@ -7,7 +7,19 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 30000, // 30 second timeout
 });
+
+// Add response interceptor to handle errors gracefully
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.code === 'ECONNREFUSED' || error.message.includes('Network Error')) {
+      console.error('Backend server is not responding. Please check if the server is running.');
+    }
+    return Promise.reject(error);
+  }
+);
 
 // Dashboard API
 export const getDashboard = async () => {

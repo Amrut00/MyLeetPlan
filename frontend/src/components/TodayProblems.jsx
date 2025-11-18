@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { getAllProblems } from '../services/api';
 import ProblemItemEnhanced from './ProblemItemEnhanced';
 import AnchorSection from './AnchorSection';
@@ -7,10 +7,20 @@ import { HiOutlineDocumentText, HiOutlineRocketLaunch } from 'react-icons/hi2';
 function TodayProblems({ anchorTopic, onAddProblems, onUpdate }) {
   const [todayProblems, setTodayProblems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const editingProblemsRef = useRef(new Set());
+  const isRefreshingRef = useRef(false);
 
-  const fetchTodayProblems = async () => {
+  const fetchTodayProblems = useCallback(async (silent = false) => {
+    // Prevent concurrent refreshes
+    if (isRefreshingRef.current) {
+      return;
+    }
+
     try {
+      isRefreshingRef.current = true;
+      if (!silent) {
       setLoading(true);
+      }
       // Get today's date string in YYYY-MM-DD (UTC) to match database dates
       const now = new Date();
       const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
@@ -30,43 +40,72 @@ function TodayProblems({ anchorTopic, onAddProblems, onUpdate }) {
     } catch (error) {
       console.error('Error fetching today\'s problems:', error);
     } finally {
+      isRefreshingRef.current = false;
+      if (!silent) {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchTodayProblems();
+    }
   }, []);
 
-  // Refresh when component becomes visible or when explicitly triggered
-  // This helps catch updates that happen after initial mount
+  // Initial fetch
+  useEffect(() => {
+    fetchTodayProblems();
+  }, [fetchTodayProblems]);
+
+  // Auto-refresh interval - polls every 10 seconds when not editing
+  // This catches updates from other components (e.g., recommendations)
   useEffect(() => {
     const interval = setInterval(() => {
-      fetchTodayProblems();
-    }, 30000); // Refresh every 30 seconds as a fallback
+      // Only refresh if no problems are being edited and not already refreshing
+      if (editingProblemsRef.current.size === 0 && !isRefreshingRef.current) {
+        fetchTodayProblems(true); // Silent refresh
+      }
+    }, 10000); // Refresh every 10 seconds
 
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchTodayProblems]);
 
-  const handleUpdate = () => {
-    fetchTodayProblems();
+  const handleUpdate = useCallback(() => {
+    // Always refresh when update is called (from edit, delete, complete, etc.)
+    // But skip if currently editing to avoid interrupting user
+    if (editingProblemsRef.current.size === 0 && !isRefreshingRef.current) {
+      setTimeout(() => {
+        fetchTodayProblems(true);
+      }, 500);
+    }
     if (onUpdate) onUpdate();
-  };
+  }, [onUpdate, fetchTodayProblems]);
+
+  const handleEditStateChange = useCallback((problemId, isEditing) => {
+    if (isEditing) {
+      editingProblemsRef.current.add(problemId);
+    } else {
+      editingProblemsRef.current.delete(problemId);
+      // When editing stops, refresh after a short delay
+      setTimeout(() => {
+        if (!isRefreshingRef.current) {
+          fetchTodayProblems(true);
+        }
+      }, 300);
+    }
+  }, [fetchTodayProblems]);
 
   return (
     <div className="space-y-3 sm:space-y-4">
       {/* Add New Problem Section */}
       <AnchorSection 
         topic={anchorTopic} 
-        onAddProblems={async (problemNumbers, topic, difficulty, notes, problemSlug, problemTitle) => {
+        onAddProblems={useCallback(async (problemNumbers, topic, difficulty, notes, problemSlug, problemTitle) => {
           const response = await onAddProblems(problemNumbers, topic, difficulty, notes, problemSlug, problemTitle);
           // Wait a bit for the database to update, then refresh
           // Use a longer delay to ensure backend has processed the request
           setTimeout(() => {
-            fetchTodayProblems();
+            if (!isRefreshingRef.current) {
+              fetchTodayProblems(true);
+            }
           }, 1000);
           return response;
-        }}
+        }, [onAddProblems, fetchTodayProblems])}
       />
 
       {/* Today's Added Problems */}
@@ -90,6 +129,7 @@ function TodayProblems({ anchorTopic, onAddProblems, onUpdate }) {
                 key={problem._id}
                 problem={{ ...problem, id: problem._id }}
                 onUpdate={handleUpdate}
+                onEditStateChange={handleEditStateChange}
                 showActions={true}
               />
             ))}

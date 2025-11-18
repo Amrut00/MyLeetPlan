@@ -1,6 +1,7 @@
 import express from 'express';
 import Problem from '../models/Problem.js';
 import { getRepetitionDateFromPlan } from '../utils/dayUtils.js';
+import { clearCalendarCache, clearStatsCache } from './stats.js';
 
 const router = express.Router();
 
@@ -117,6 +118,11 @@ router.post('/', async (req, res) => {
     }
 
     const hasTodayDupes = duplicates.some(d => d.reason === 'already_added_today');
+    
+    // Clear caches since new problems were added
+    clearCalendarCache();
+    clearStatsCache();
+    
     res.status(hasTodayDupes ? 200 : 201).json({
       message: hasTodayDupes
         ? `${results.length} problem(s) added or already present for today.`
@@ -143,15 +149,73 @@ router.patch('/:id/complete', async (req, res) => {
       return res.status(404).json({ error: 'Problem not found' });
     }
 
-    // If marking as complete (was not completed before), increment solve count
-    // This handles repetition problems - each time you complete them on a DIFFERENT day, it's another solve
-    const updateData = {
-      isCompleted: true,
-      completedDate: new Date()
-    };
+    const now = new Date();
+    const todayStartUTC = new Date();
+    todayStartUTC.setUTCHours(0, 0, 0, 0);
+    const todayEndUTC = new Date(todayStartUTC);
+    todayEndUTC.setUTCHours(23, 59, 59, 999);
+
+    // Prevent marking as complete if it was already completed on a past day
+    if (currentProblem.isCompleted) {
+      let completionDate;
+      if (currentProblem.type === 'repetition') {
+        completionDate = currentProblem.repetitionCompletedDate;
+      } else {
+        completionDate = currentProblem.completedDate;
+      }
+
+      if (completionDate) {
+        const completionDayStart = new Date(completionDate);
+        completionDayStart.setUTCHours(0, 0, 0, 0);
+        
+        // If completion date is before today, prevent changes
+        if (completionDayStart < todayStartUTC) {
+          return res.status(400).json({ 
+            error: 'Cannot change completion status for problems completed on past days. Completion status is locked after the day has passed.' 
+          });
+        }
+      }
+    }
+
+    const updateData = { isCompleted: true };
+
+    // Handle repetition problems differently from anchor problems
+    if (currentProblem.type === 'repetition') {
+      // For repetition problems, use repetitionCompletedDate instead of completedDate
+      updateData.repetitionCompletedDate = now;
+      
+      // Only increment solve count if it wasn't already completed
+      if (!currentProblem.isCompleted) {
+        // Check if already solved today (anchor or repetition) to prevent double-counting
+        const alreadySolvedToday = await Problem.exists({
+          problemNumber: currentProblem.problemNumber,
+          $or: [
+            { type: 'anchor', completedDate: { $gte: todayStartUTC, $lte: todayEndUTC }, isCompleted: true },
+            { type: 'repetition', repetitionCompletedDate: { $gte: todayStartUTC, $lte: todayEndUTC }, isCompleted: true }
+          ]
+        });
+
+        // Find the maximum solve count for this problem number across all entries
+        const maxSolveCountDoc = await Problem.findOne({
+          problemNumber: currentProblem.problemNumber
+        }).sort({ solveCount: -1 });
+        const currentMax = maxSolveCountDoc?.solveCount || currentProblem.solveCount || 0;
+
+        // Only increment if no completion recorded for this problem number today
+        const newSolveCount = alreadySolvedToday ? currentMax : currentMax + 1;
+        updateData.solveCount = newSolveCount;
+
+        // Sync solve count across all entries for this problem number (both anchor and repetition)
+        await Problem.updateMany(
+          { problemNumber: currentProblem.problemNumber },
+          { $set: { solveCount: newSolveCount } }
+        );
+      }
+    } else {
+      // For anchor problems, use completedDate as before
+      updateData.completedDate = now;
 
     // Only increment solve count if it wasn't already completed
-    // This way, if you unmark and remark, it counts as another solve
     if (!currentProblem.isCompleted) {
       // Use UTC day boundaries to detect if we already counted a solve today for this problem number
       const todayStartUTC = new Date();
@@ -159,10 +223,13 @@ router.patch('/:id/complete', async (req, res) => {
       const todayEndUTC = new Date(todayStartUTC);
       todayEndUTC.setUTCHours(23, 59, 59, 999);
 
+        // Check if already solved today (anchor or repetition)
       const alreadySolvedToday = await Problem.exists({
         problemNumber: currentProblem.problemNumber,
-        isCompleted: true,
-        completedDate: { $gte: todayStartUTC, $lte: todayEndUTC }
+          $or: [
+            { type: 'anchor', completedDate: { $gte: todayStartUTC, $lte: todayEndUTC }, isCompleted: true },
+            { type: 'repetition', repetitionCompletedDate: { $gte: todayStartUTC, $lte: todayEndUTC }, isCompleted: true }
+          ]
       });
 
       // Find the maximum solve count for this problem number across all entries
@@ -180,8 +247,7 @@ router.patch('/:id/complete', async (req, res) => {
         { problemNumber: currentProblem.problemNumber },
         { $set: { solveCount: newSolveCount } }
       );
-
-      // IMPORTANT: When completing a repetition problem, we do not create new entries here.
+      }
     }
 
     const problem = await Problem.findByIdAndUpdate(
@@ -189,6 +255,10 @@ router.patch('/:id/complete', async (req, res) => {
       updateData,
       { new: true }
     );
+
+    // Clear caches since completion status changed
+    clearCalendarCache();
+    clearStatsCache();
 
     res.json({
       message: 'Problem marked as completed',
@@ -214,7 +284,7 @@ router.get('/', async (req, res) => {
       query.topic = topic;
     }
 
-    const problems = await Problem.find(query).sort({ createdAt: -1 });
+    const problems = await Problem.find(query).sort({ createdAt: -1 }).lean();
     res.json(problems);
   } catch (error) {
     console.error('Error fetching problems:', error);
@@ -274,6 +344,10 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Problem not found' });
     }
 
+    // Clear caches if dates or completion status might have changed
+    clearCalendarCache();
+    clearStatsCache();
+
     res.json({
       message: 'Problem updated successfully',
       problem
@@ -301,39 +375,99 @@ router.patch('/:id/uncomplete', async (req, res) => {
     const todayEndUTC = new Date(todayStartUTC);
     todayEndUTC.setUTCHours(23, 59, 59, 999);
 
-    // When unmarking, we allow at most one decrement per day across the problemNumber.
-    // Count how many completions exist today BEFORE unmarking.
+    // Prevent unmarking if completion date is in the past
+    if (currentProblem.isCompleted) {
+      let completionDate;
+      if (currentProblem.type === 'repetition') {
+        completionDate = currentProblem.repetitionCompletedDate;
+      } else {
+        completionDate = currentProblem.completedDate;
+      }
+
+      if (completionDate) {
+        const completionDayStart = new Date(completionDate);
+        completionDayStart.setUTCHours(0, 0, 0, 0);
+        
+        // If completion date is before today, prevent changes
+        if (completionDayStart < todayStartUTC) {
+          return res.status(400).json({ 
+            error: 'Cannot change completion status for problems completed on past days. Completion status is locked after the day has passed.' 
+          });
+        }
+      }
+    }
+
+    // Prepare base update
+    const updateData = {
+      isCompleted: false
+    };
+
+    // Handle repetition vs anchor problems differently
+    if (currentProblem.type === 'repetition') {
+      // For repetition problems, unset repetitionCompletedDate
+      updateData.$unset = { repetitionCompletedDate: 1 };
+      
+      // Check if this was completed today
+      const wasCompletedToday = currentProblem.repetitionCompletedDate && (
+        currentProblem.repetitionCompletedDate >= todayStartUTC && 
+        currentProblem.repetitionCompletedDate <= todayEndUTC
+      );
+
+      // Count completions today (anchor or repetition)
     const completedTodayCount = await Problem.countDocuments({
       problemNumber: currentProblem.problemNumber,
       isCompleted: true,
-      completedDate: { $gte: todayStartUTC, $lte: todayEndUTC }
+        $or: [
+          { type: 'anchor', completedDate: { $gte: todayStartUTC, $lte: todayEndUTC } },
+          { type: 'repetition', repetitionCompletedDate: { $gte: todayStartUTC, $lte: todayEndUTC } }
+        ]
     });
 
-    // Prepare base update (unmark + remove completedDate)
-    const updateData = {
-      isCompleted: false,
-      $unset: { completedDate: 1 }
-    };
+      // If this was the only completion today, decrement solveCount
+      if (wasCompletedToday && completedTodayCount === 1) {
+        const maxSolveCountDoc = await Problem.findOne({
+          problemNumber: currentProblem.problemNumber
+        }).sort({ solveCount: -1 });
+        const currentMax = maxSolveCountDoc?.solveCount || currentProblem.solveCount || 0;
+        const newSolveCount = Math.max(0, currentMax - 1);
+
+        await Problem.updateMany(
+          { problemNumber: currentProblem.problemNumber },
+          { $set: { solveCount: newSolveCount } }
+        );
+      }
+    } else {
+      // For anchor problems, unset completedDate
+      updateData.$unset = { completedDate: 1 };
+
+      // Count how many completions exist today BEFORE unmarking
+      const completedTodayCount = await Problem.countDocuments({
+        problemNumber: currentProblem.problemNumber,
+        isCompleted: true,
+        $or: [
+          { type: 'anchor', completedDate: { $gte: todayStartUTC, $lte: todayEndUTC } },
+          { type: 'repetition', repetitionCompletedDate: { $gte: todayStartUTC, $lte: todayEndUTC } }
+        ]
+      });
 
     // If this entry was completed today and it is the ONLY completion for today,
-    // then decrement solveCount by 1 (and sync across entries).
+      // then decrement solveCount by 1
     const wasCompletedToday = currentProblem.completedDate && (
       currentProblem.completedDate >= todayStartUTC && currentProblem.completedDate <= todayEndUTC
     );
 
     if (wasCompletedToday && completedTodayCount === 1) {
-      // Find current max solveCount and decrement by 1 (not below 0)
       const maxSolveCountDoc = await Problem.findOne({
         problemNumber: currentProblem.problemNumber
       }).sort({ solveCount: -1 });
       const currentMax = maxSolveCountDoc?.solveCount || currentProblem.solveCount || 0;
       const newSolveCount = Math.max(0, currentMax - 1);
 
-      // Sync decremented solveCount across all entries for this problemNumber
       await Problem.updateMany(
         { problemNumber: currentProblem.problemNumber },
         { $set: { solveCount: newSolveCount } }
       );
+      }
     }
 
     const problem = await Problem.findByIdAndUpdate(
@@ -342,15 +476,12 @@ router.patch('/:id/uncomplete', async (req, res) => {
       { new: true }
     );
 
-    // Note: If repetitionDate is in the past, the problem will appear in backlog
-    // If repetitionDate is today, it will appear in repetition section on next dashboard load
-    const todayLocal = new Date();
-    todayLocal.setHours(0, 0, 0, 0);
-    const repetitionDate = new Date(currentProblem.repetitionDate);
-    repetitionDate.setHours(0, 0, 0, 0);
+    // Clear caches since completion status changed
+    clearCalendarCache();
+    clearStatsCache();
 
-    const message = repetitionDate <= todayLocal
-      ? 'Problem unmarked as completed. It will appear in backlog/repetition section.'
+    const message = currentProblem.type === 'repetition'
+      ? 'Repetition problem unmarked as completed. It will appear in backlog/repetition section.'
       : 'Problem unmarked as completed';
 
     res.json({
@@ -373,6 +504,10 @@ router.delete('/:id', async (req, res) => {
     if (!problem) {
       return res.status(404).json({ error: 'Problem not found' });
     }
+
+    // Clear caches since problem was deleted
+    clearCalendarCache();
+    clearStatsCache();
 
     res.json({
       message: 'Problem deleted successfully',
