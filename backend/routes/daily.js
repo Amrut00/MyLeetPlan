@@ -2,6 +2,11 @@ import express from 'express';
 import Problem from '../models/Problem.js';
 import PracticePlan from '../models/PracticePlan.js';
 import { getTodayTopics, getDateNDaysFromToday, formatDate, getTodayDayOfWeek } from '../utils/dayUtils.js';
+import { 
+  selectDailyRepetitions, 
+  distributeUnselectedProblems,
+  getNextTopicDays
+} from '../utils/spacedRepetition.js';
 
 const router = express.Router();
 
@@ -27,31 +32,31 @@ router.get('/dashboard', async (req, res) => {
     todayStartUTC.setUTCHours(0, 0, 0, 0);
     const todayEndUTC = new Date(todayStartUTC);
     todayEndUTC.setUTCHours(23, 59, 59, 999);
+    const tomorrow = new Date(todayEndUTC);
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
     const todayStr = formatDate(new Date(todayStartUTC));
 
-    // Get repetition problems: Create separate repetition entries for problems due today
-    // This ensures original anchor problems' completion status remains intact
-    const tomorrow = new Date(todayEndUTC);
-    
-    // Find anchor problems that are due for repetition today
-    const anchorProblemsDueForRepetition = await Problem.find({
-      type: 'anchor',
-      repetitionDate: {
-        $gte: todayStartUTC,
-        $lt: tomorrow
-      }
-    });
+    // Smart Repetition System: Topic-aware repetition creation
+    const repetitionTopic = todayTopics.repetition;
+    const DAILY_REPETITION_LIMIT = 5; // Maximum repetitions per day
 
-    // Create repetition entries for problems that don't have one yet
-    for (const anchorProblem of anchorProblemsDueForRepetition) {
+    // Select problems for repetition using priority-based algorithm
+    const { selected, unselected } = await selectDailyRepetitions(
+      repetitionTopic,
+      todayStartUTC,
+      DAILY_REPETITION_LIMIT
+    );
+    
+    // Create repetition entries for selected problems
+    for (const anchorProblem of selected) {
       // Check if a repetition entry already exists for today
       const existingRepetition = await Problem.findOne({
         type: 'repetition',
         originalProblemId: anchorProblem._id,
-        repetitionDate: {
-          $gte: todayStartUTC,
-          $lt: tomorrow
-        }
+        $or: [
+          { repetitionDate: { $gte: todayStartUTC, $lt: tomorrow } },
+          { scheduledRepetitionDate: { $gte: todayStartUTC, $lt: tomorrow } }
+        ]
       });
 
       // If no repetition entry exists, create one
@@ -64,35 +69,71 @@ router.get('/dashboard', async (req, res) => {
           difficulty: anchorProblem.difficulty,
           notes: anchorProblem.notes,
           addedDate: anchorProblem.addedDate, // Keep original added date
-          repetitionDate: anchorProblem.repetitionDate,
+          repetitionDate: anchorProblem.scheduledRepetitionDate || anchorProblem.repetitionDate || todayStartUTC,
+          scheduledRepetitionDate: anchorProblem.scheduledRepetitionDate || todayStartUTC,
           type: 'repetition',
           originalProblemId: anchorProblem._id,
           isCompleted: false,
-          solveCount: anchorProblem.solveCount || 0
+          solveCount: anchorProblem.solveCount || 0,
+          masteryLevel: anchorProblem.masteryLevel || 'new'
         });
       }
     }
-    
-    // Find repetition problems: ONLY repetition type entries where repetitionDate is TODAY
-    const repetitionProblems = await Problem.find({
-      type: 'repetition',
-      repetitionDate: {
-        $gte: todayStartUTC,
-        $lt: tomorrow
-      },
-      isCompleted: false // Only show if not yet completed
-    }).sort({ repetitionDate: 1, createdAt: 1 });
 
-    // Get backlog: ONLY repetition type entries where repetitionDate is in the past
-    // and they were NOT completed on their scheduled repetition day
+    // Distribute unselected problems to future topic days
+    if (unselected.length > 0) {
+      await distributeUnselectedProblems(unselected, repetitionTopic);
+    }
+    
+    // Find repetition problems: ONLY repetition type entries where date is TODAY
+    // First, get all to check if we exceed the limit
+    const allTodayRepetitions = await Problem.find({
+      type: 'repetition',
+      topic: repetitionTopic, // Only show today's topic
+      $or: [
+        { repetitionDate: { $gte: todayStartUTC, $lt: tomorrow } },
+        { scheduledRepetitionDate: { $gte: todayStartUTC, $lt: tomorrow } }
+      ],
+      isCompleted: false // Only show if not yet completed
+    })
+    .sort({ scheduledRepetitionDate: 1, repetitionDate: 1, createdAt: 1 });
+
+    // If we have more than the limit, redistribute excess to future dates
+    if (allTodayRepetitions.length > DAILY_REPETITION_LIMIT) {
+      const excess = allTodayRepetitions.slice(DAILY_REPETITION_LIMIT);
+      const nextTopicDays = await getNextTopicDays(repetitionTopic, 4);
+      
+      if (nextTopicDays.length > 0) {
+        const problemsPerDay = Math.ceil(excess.length / nextTopicDays.length);
+        for (let i = 0; i < excess.length; i++) {
+          const dayIndex = Math.floor(i / problemsPerDay);
+          const targetDate = nextTopicDays[Math.min(dayIndex, nextTopicDays.length - 1)];
+          
+          await Problem.findByIdAndUpdate(excess[i]._id, {
+            scheduledRepetitionDate: targetDate,
+            repetitionDate: targetDate // Update both for consistency
+          });
+        }
+      }
+    }
+
+    // Return only the limited set
+    const repetitionProblems = allTodayRepetitions.slice(0, DAILY_REPETITION_LIMIT);
+
+    // Get backlog: ONLY repetition type entries where scheduledRepetitionDate is in the past
+    // and they match today's repetition topic
     // BACKLOG = Problems that were due for repetition but weren't completed on that day
     const backlogProblems = await Problem.find({
       type: 'repetition',
-      repetitionDate: {
-        $lt: todayStartUTC // repetitionDate is in the past
-      },
+      topic: repetitionTopic, // Only show today's topic backlog
+      $or: [
+        { scheduledRepetitionDate: { $lt: todayStartUTC } },
+        { repetitionDate: { $lt: todayStartUTC } } // Fallback for legacy data
+      ],
       isCompleted: false // Not yet completed (missed their repetition day)
-    }).sort({ repetitionDate: 1 }); // Sort by when they were due (oldest first)
+    })
+    .sort({ scheduledRepetitionDate: 1, repetitionDate: 1 }) // Sort by when they were due (oldest first)
+    .limit(DAILY_REPETITION_LIMIT); // Limit backlog to daily limit
 
     // Get count of problems added today
     const todayAddedCount = await Problem.countDocuments({

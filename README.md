@@ -1,11 +1,13 @@
 # MyLeetPlan
 
-A comprehensive, personalized LeetCode practice dashboard with intelligent problem recommendations, spaced repetition system, and progress tracking. Built with React, Node.js, Express, and MongoDB. Built for personal use.
+A comprehensive, personalized LeetCode practice dashboard with intelligent problem recommendations, smart spaced repetition system, and progress tracking. Built with React, Node.js, Express, and MongoDB.
+
+> **Note:** This website is made for my personal use only. I created it because I needed a personalized way to track my LeetCode progress that fits my specific learning style and practice routine.
 
 ## 🎯 Overview
 
 MyLeetPlan helps you maintain a consistent LeetCode problem-solving routine through:
-- **Spaced Repetition**: 3-day review cycle for better retention
+- **Smart Spaced Repetition**: Topic-aware repetition system with difficulty-based intervals and mastery tracking
 - **Smart Recommendations**: AI-enhanced problem suggestions based on your progress
 - **Customizable Practice Plan**: Flexible weekly schedule tailored to your needs
 - **Progress Tracking**: Visual calendar, statistics, and streak tracking
@@ -13,57 +15,185 @@ MyLeetPlan helps you maintain a consistent LeetCode problem-solving routine thro
 
 ## ✨ Key Features
 
-### 🎓 Learning System
-- **Anchor Problems**: Add 2 new problems daily from today's topic
-- **Repetition Problems**: Automatically review problems from 3 days ago
-- **Backlog**: Track and complete missed repetition problems
-- **Customizable Practice Plan**: Set your own weekly anchor and repetition topics
+### 🎓 Smart Spaced Repetition System
+
+The system uses an intelligent spaced repetition algorithm that adapts to your performance:
+
+- **Topic-Aware Scheduling**: Repetitions are scheduled based on your weekly practice plan, ensuring you review problems when their topic is scheduled
+- **Difficulty-Based Intervals**: 
+  - Easy problems: +25% longer intervals
+  - Medium problems: Standard intervals
+  - Hard problems: -25% shorter intervals
+- **Mastery Levels**: Problems progress through four levels:
+  - **New**: Just added, not yet reviewed
+  - **Learning**: Being actively reviewed
+  - **Reviewing**: Well-practiced, longer intervals
+  - **Mastered**: Fully mastered, longest intervals
+- **Priority-Based Selection**: Daily repetitions are selected based on:
+  - Urgency (days overdue)
+  - Mastery level
+  - Solve count
+  - Last review date
+- **Daily Limits**: Maximum 4-5 repetition problems per day to maintain focus
+- **Even Distribution**: Excess problems are evenly distributed across future topic days
+- **Performance Tracking**: Tracks streak count, failed count, and solve count for each problem
+
+**How It Works:**
+1. When you add a problem, it's marked as an "anchor" problem
+2. The system calculates the next repetition date based on difficulty and solve count
+3. The repetition is scheduled for the next day when that topic appears in your practice plan
+4. Up to 5 problems are selected daily based on priority
+5. When you complete a repetition, the system recalculates intervals and mastery level
+6. Problems that aren't selected are automatically rescheduled to future topic days
+
+### 🎯 Anchor Problems
+- Add 2 new problems daily from today's anchor topic
+- Each problem tracks its own solve count, mastery level, and repetition schedule
+- Problems maintain their original completion date for historical accuracy
+
+### 🔄 Repetition Problems
+- Automatically created when anchor problems are due for review
+- Separate entries from anchor problems to preserve historical data
+- Tracked independently with their own completion dates
+- Limited to 4-5 problems per day for optimal learning
+
+### 📋 Backlog Management
+- Tracks missed repetition problems (past due and incomplete)
+- Grouped by topic for easy organization
+- Automatically redistributed to future topic days when possible
+- Can be completed anytime to clear the backlog
 
 ### 🤖 Smart Recommendations
 - **Curated Problem List**: 96 carefully selected problems with prerequisites and learning order
 - **AI-Enhanced Reasoning**: Groq Cloud AI provides personalized explanations for problem recommendations
 - **Prerequisite Tracking**: System ensures you solve problems in the correct order
 - **Topic-Based Suggestions**: Prioritizes problems from today's anchor topic
+- **Progress Tracking**: Shows X/96 problems solved from the curated list
 
 ### 📊 Progress Tracking
-- **LeetCode-Style Calendar**: Visual heatmap showing your daily activity
-- **Statistics Dashboard**: Comprehensive stats including:
-  - Total problems solved
-  - Completion rate by difficulty and topic
-  - Current streak
-  - Weekly progress
-- **Quick Stats Sidebar**: At-a-glance view of today's progress and key metrics
+
+#### LeetCode-Style Calendar
+- Visual heatmap showing your daily activity for the last 365 days
+- Color-coded intensity based on problems solved per day
+- Click any date to jump to problems from that day
+- Shows anchor completions, repetition completions, and problems added
+
+#### Statistics Dashboard
+- **Overview**: Total problems, completed, pending, and completion rate
+- **Streak Tracking**: Current consecutive days of solving (shows streak even if nothing solved today)
+- **Weekly Progress**: Problems solved this week (Monday to Sunday)
+- **By Difficulty**: Breakdown with progress bars for Easy, Medium, and Hard
+- **By Topic**: Comprehensive statistics for each topic including:
+  - Total problems
+  - Completed count
+  - Completion rate
+  - Progress bars
+
+#### Quick Stats Sidebar
+- Today's summary (added, solved, remaining)
+- Current streak
+- Weekly progress
+- Top topics by completion
 
 ### 🎨 User Experience
-- **Dark Theme**: LeetCode-inspired dark theme with multiple gray shades
-- **Responsive Design**: Works seamlessly on desktop, tablet, and mobile
-- **Real-time Updates**: Instant UI updates when marking problems complete
-- **Smart Topic Detection**: Prevents duplicate topics with fuzzy matching
+
+#### Responsive Design
+- Fully responsive layout optimized for desktop, tablet, and mobile (≤425px)
+- Compact UI elements on mobile devices
+- Touch-friendly buttons and interactions
+- Optimized spacing and typography for small screens
+
+#### Dark Theme
+- LeetCode-inspired dark theme with multiple gray shades
+- Consistent color scheme throughout
+- Easy on the eyes for long coding sessions
+
+#### Real-time Updates
+- Instant UI updates when marking problems complete
+- Auto-refresh for problem lists (pauses during editing)
+- Synchronized state across all components
+- Optimized with caching for better performance
+
+#### Smart Features
 - **Auto-fetch Problem Details**: Automatically retrieves problem titles, slugs, and difficulty from LeetCode
+- **Smart Topic Detection**: Prevents duplicate topics with fuzzy matching
+- **Duplicate Handling**: Increments solve count instead of creating duplicates
+- **Completion Date Locking**: Prevents changing completion status for past days
+- **Custom Topics**: Add your own topics beyond the standard list
 
 ### 🔍 Problem Management
-- **All Problems View**: Browse all problems with advanced filtering:
-  - Filter by completion status
+
+#### All Problems View
+- Browse all problems with advanced filtering:
+  - Filter by completion status (all, completed, pending)
+  - Filter by type (all problems or repetition problems only)
   - Filter by topic (only shows topics with solved problems)
-  - Filter by type (all problems or repeated problems only)
   - Search by problem number, title, topic, or notes
-- **Problem Details**: Each problem includes:
-  - Difficulty level (Easy/Medium/Hard)
-  - Custom notes
-  - Solve count (tracks how many times solved)
-  - Direct links to LeetCode
-- **Edit & Delete**: Full CRUD operations on all problems
+- **Grouped Display**: Problems grouped by date (anchor problems by added date, repetition problems by repetition date)
+- **Scroll-to-Date Navigation**: Quick navigation to specific dates
+- **Today's Overview**: Quick summary card with links to daily sections
+
+#### Problem Details
+Each problem includes:
+- Problem number and title with direct LeetCode link
+- Difficulty level (Easy/Medium/Hard) with color coding
+- Topic
+- Custom notes (large textarea for better visibility)
+- Solve count (tracks how many times solved)
+- Completion status with date
+- For repetition problems: Shows original added date and repetition date
+
+#### Edit & Delete
+- Full CRUD operations on all problems
+- Edit mode prevents auto-refresh to preserve notes
+- Delete anchor problems also removes associated repetition entries
+- Topic changes automatically recalculate repetition schedules
 
 ### 📅 Calendar & Navigation
-- **Interactive Calendar**: Click any date to jump to problems from that day
-- **Date Navigation**: Seamless navigation between daily view and all problems
-- **Live Clock**: Real-time clock in the navbar (12-hour format)
 
-### 💡 Smart Features
-- **Daily Motivation**: Personalized motivational messages
-- **Quick Tips**: Topic-specific study tips based on today's anchor topic
-- **Duplicate Detection**: Prevents adding the same problem multiple times (tracks solve count instead)
-- **Custom Topics**: Add your own topics beyond the standard list
+#### Interactive Calendar
+- Click any date to jump to problems from that day
+- Visual representation of daily activity
+- Month navigation with keyboard support
+- Optimized loading with caching
+
+#### Navigation
+- Seamless navigation between daily view and all problems
+- Live clock in the navbar (12-hour format)
+- Date display with current day highlighted
+- Tab-based navigation for different views
+
+### 📋 Practice Plan
+
+#### Customizable Weekly Schedule
+- Set anchor topic for each day of the week (Monday to Sunday)
+- Set repetition topic for each day
+- Full CRUD operations (add, edit, delete)
+- Today's day highlighted in blue
+- Default plan can be initialized with one click
+
+#### Topic-Aware Scheduling
+- Repetition system uses practice plan to schedule reviews
+- Problems are scheduled for days when their topic appears
+- Ensures focused practice on specific topics each day
+
+### 💡 Additional Features
+
+#### Daily Motivation
+- Personalized motivational messages
+- Changes daily to keep you motivated
+- Context-aware messages based on your progress
+
+#### Quick Tips
+- Topic-specific study tips based on today's anchor topic
+- Helpful hints and best practices
+- Rotates through different tips
+
+#### Problem Recommendations
+- Shows recommended problem pairs from curated list
+- AI-powered reasoning (if Groq API available)
+- Progress indicator (X/96 solved)
+- Direct links to add problems
 
 ## 📋 Supported Topics
 
@@ -83,247 +213,60 @@ MyLeetPlan helps you maintain a consistent LeetCode problem-solving routine thro
 - Greedy
 - Custom Topics (user-defined)
 
-## 🚀 Setup Instructions
+## 🔄 Workflow
 
-### Prerequisites
-- Node.js (v20.19.0 or higher recommended)
-- MongoDB Atlas account (or local MongoDB)
-- npm or yarn
-- Groq Cloud API key (optional, for AI-enhanced recommendations)
+### Daily Routine
+1. **View Recommendations**: Check today's recommended problems from the curated list
+2. **Add New Problems**: Add 2 problems for today's anchor topic
+3. **Review Repetitions**: Complete up to 5 repetition problems scheduled for today
+4. **Clear Backlog**: Work on any missed repetition problems when time permits
+5. **Track Progress**: Monitor your streak, weekly progress, and statistics
 
-### Backend Setup
+### Problem Lifecycle
+1. **Add Problem**: Problem is added as an "anchor" with initial mastery level "new"
+2. **Complete Problem**: Mark as complete, increments solve count, calculates next repetition date
+3. **Repetition Scheduling**: System schedules repetition for next topic day based on interval
+4. **Repetition Day**: Up to 5 problems are selected based on priority and shown for review
+5. **Complete Repetition**: Updates mastery level, recalculates interval, schedules next review
+6. **Mastery Progression**: Problems advance through mastery levels as you solve them repeatedly
 
-1. **Navigate to backend directory:**
-   ```bash
-   cd backend
-   ```
+### Smart Repetition Flow
+1. Anchor problem is added → `nextRepetitionDate` calculated based on difficulty
+2. `scheduledRepetitionDate` set to next day when topic appears in practice plan
+3. On repetition day, system selects top 5 problems by priority
+4. Unselected problems are redistributed to future topic days
+5. When repetition is completed, new interval calculated and mastery level updated
+6. Process repeats with longer intervals as mastery increases
 
-2. **Create `.env` file:**
-   ```bash
-   cp .env.example .env
-   ```
+## 🎯 Smart Features Explained
 
-3. **Update `.env` with your configuration:**
-   ```env
-   MONGODB_URI=your_mongodb_connection_string_here
-   PORT=5000
-   FRONTEND_URL=http://localhost:5173
-   GROQ_API_KEY=your_groq_api_key_here
-   ```
-   
-   **Note:** Get your MongoDB connection string from MongoDB Atlas dashboard. The format should be: `mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/YOUR_DATABASE?retryWrites=true&w=majority`
-   
-   **Groq API Key:** Sign up at [Groq Cloud](https://console.groq.com/) to get a free API key for AI-enhanced recommendations. The system will fall back to basic recommendations if the API key is not provided.
+### Spaced Repetition Algorithm
+- **Interval Calculation**: Based on solve count and difficulty
+  - Formula: `baseInterval = solveCount + 1`
+  - Easy: `interval = baseInterval * 1.25`
+  - Medium: `interval = baseInterval * 1.0`
+  - Hard: `interval = baseInterval * 0.75`
+- **Mastery Level Calculation**: Based on solve count, failed count, and streak
+  - New: solveCount = 0
+  - Learning: solveCount 1-2, or failedCount > 0
+  - Reviewing: solveCount 3-5, streakCount ≥ 2
+  - Mastered: solveCount > 5, streakCount ≥ 3
+- **Priority Score**: Combines urgency, mastery, solve count, and last review date
+- **Topic Day Finding**: Uses practice plan to find next occurrence of problem's topic
 
-4. **Install dependencies:**
-   ```bash
-   npm install
-   ```
+### Recommendation System
+- **Curated List**: 96 problems with prerequisites and learning order
+- **Prerequisite Checking**: Only recommends problems whose prerequisites are solved
+- **Topic Prioritization**: Prioritizes problems from today's anchor topic
+- **AI Enhancement**: Uses Groq Cloud AI to provide personalized reasoning
+- **Fallback**: Basic recommendations if AI is unavailable
 
-5. **Start the backend server:**
-   ```bash
-   npm start
-   # or for development with auto-reload:
-   npm run dev
-   ```
-
-   The server will run on `http://localhost:5000`
-
-### Frontend Setup
-
-1. **Navigate to frontend directory:**
-   ```bash
-   cd frontend
-   ```
-
-2. **Create `.env` file (optional, defaults to localhost:5000):**
-   ```bash
-   cp .env.example .env
-   ```
-
-3. **Update `.env` if your backend is on a different URL:**
-   ```env
-   VITE_API_URL=http://localhost:5000/api
-   ```
-
-4. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-5. **Start the development server:**
-   ```bash
-   npm run dev
-   ```
-
-   The frontend will run on `http://localhost:5173`
-
-## 📁 Project Structure
-
-```
-Daily Dashboard/
-├── backend/
-│   ├── data/
-│   │   └── curatedProblems.json    # Curated list of 96 problems
-│   ├── models/
-│   │   ├── Problem.js              # MongoDB schema for problems
-│   │   └── PracticePlan.js         # MongoDB schema for practice plan
-│   ├── routes/
-│   │   ├── problems.js             # API routes for problem CRUD
-│   │   ├── daily.js                # API routes for daily dashboard
-│   │   ├── stats.js                # API routes for statistics and calendar
-│   │   ├── leetcode.js             # API routes for LeetCode problem fetching
-│   │   ├── practicePlan.js         # API routes for practice plan management
-│   │   └── recommendations.js      # API routes for smart recommendations
-│   ├── utils/
-│   │   ├── dayUtils.js             # Day/topic mapping utilities
-│   │   └── recommendations.js      # Recommendation logic (AI + basic)
-│   ├── server.js                   # Express server setup
-│   └── package.json
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── Dashboard.jsx           # Main dashboard component
-│   │   │   ├── TodayProblems.jsx       # Problems added today section
-│   │   │   ├── RepetitionSection.jsx   # Review problems section
-│   │   │   ├── BacklogSection.jsx      # Missed problems section
-│   │   │   ├── AllProblems.jsx         # All problems view with filters
-│   │   │   ├── ProblemItemEnhanced.jsx # Individual problem display/edit
-│   │   │   ├── AnchorSection.jsx       # Add new problems form
-│   │   │   ├── ProblemRecommendations.jsx # Smart recommendations
-│   │   │   ├── PracticePlan.jsx        # Customizable practice plan
-│   │   │   ├── Statistics.jsx          # Statistics dashboard
-│   │   │   ├── ProgressCalendar.jsx    # LeetCode-style calendar
-│   │   │   ├── QuickStats.jsx          # Quick stats sidebar
-│   │   │   ├── DailyMotivation.jsx     # Daily motivation messages
-│   │   │   ├── QuickTips.jsx           # Topic-specific tips
-│   │   │   └── NotFound404.jsx         # 404 error page
-│   │   ├── services/
-│   │   │   └── api.js              # API service functions
-│   │   ├── App.jsx
-│   │   └── main.jsx
-│   └── package.json
-└── README.md
-```
-
-## 🗄️ Database Schema
-
-### Problem Model
-```javascript
-{
-  problemNumber: String,        // LeetCode problem number (e.g., "704")
-  problemSlug: String,          // LeetCode problem slug (e.g., "binary-search")
-  problemTitle: String,         // LeetCode problem title (e.g., "Binary Search")
-  topic: String,                // Problem topic (standard or custom)
-  difficulty: String,           // "Easy", "Medium", or "Hard"
-  notes: String,                // User's custom notes
-  addedDate: Date,              // When the problem was first added
-  repetitionDate: Date,         // When it should be reviewed
-  isCompleted: Boolean,         // Whether it's been completed
-  completedDate: Date,          // When it was marked complete
-  type: String,                 // "anchor" or "repetition"
-  solveCount: Number            // How many times this problem has been solved
-}
-```
-
-### PracticePlan Model
-```javascript
-{
-  dayOfWeek: Number,            // 0 (Sunday) to 6 (Saturday)
-  anchorTopic: String,          // Topic for new problems on this day
-  repetitionTopic: String       // Topic for repetition on this day
-}
-```
-
-## 🔌 API Endpoints
-
-### Daily Dashboard
-- **GET `/api/daily/dashboard`**
-  - Returns today's dashboard data including:
-    - Today's date
-    - Anchor topic
-    - Repetition topic
-    - Problems added today count
-    - Problems solved today count
-    - List of repetition problems due today
-    - Backlog of missed repetition problems
-
-### Problems
-- **GET `/api/problems`**
-  - Get all problems with optional filters:
-    - `?completed=true/false` - Filter by completion status
-    - `?topic=TopicName` - Filter by topic
-  - Returns array of all problems
-
-- **POST `/api/problems`**
-  - Add new problem(s)
-  - Body: `{ problemNumbers: ["704"], topic: "Binary Search", difficulty: "Easy", notes: "...", problemSlug: "...", problemTitle: "..." }`
-  - Automatically handles duplicates (increments solve count)
-
-- **GET `/api/problems/:id`**
-  - Get single problem by ID
-
-- **PUT `/api/problems/:id`**
-  - Update problem details
-
-- **PATCH `/api/problems/:id/complete`**
-  - Mark problem as completed
-  - Increments solve count if not already completed
-
-- **PATCH `/api/problems/:id/uncomplete`**
-  - Unmark problem as completed
-
-- **DELETE `/api/problems/:id`**
-  - Delete a problem
-
-- **GET `/api/problems/topics`**
-  - Get all unique topics from solved problems
-
-### Statistics
-- **GET `/api/stats`**
-  - Returns comprehensive statistics:
-    - Overview (total, completed, pending, completion rate)
-    - Problems by difficulty
-    - Problems by topic
-    - Daily completions (last 30 days)
-    - Current streak
-    - This week's problems count
-    - Problems solved today count
-
-- **GET `/api/stats/calendar`**
-  - Returns calendar data for last 365 days
-  - Includes problem counts per day
-
-### Practice Plan
-- **GET `/api/practice-plan`**
-  - Get all practice plan entries
-
-- **POST `/api/practice-plan`**
-  - Create new practice plan entry
-  - Body: `{ dayOfWeek: 0, anchorTopic: "Arrays & Hashing", repetitionTopic: "Binary Search" }`
-
-- **PUT `/api/practice-plan/:id`**
-  - Update practice plan entry
-
-- **DELETE `/api/practice-plan/:id`**
-  - Delete practice plan entry
-
-- **POST `/api/practice-plan/initialize`**
-  - Initialize default practice plan (7 days)
-
-### Recommendations
-- **GET `/api/recommendations`**
-  - Get smart problem recommendations
-  - Returns:
-    - Recommended problem pair (or single problem)
-    - AI-enhanced reasoning (if Groq API available)
-    - Progress (X/96 solved)
-    - Source information
-
-### LeetCode Integration
-- **GET `/api/leetcode/:problemNumber`**
-  - Fetch problem details from LeetCode
-  - Returns: `{ success: true, slug: "...", title: "...", difficulty: "..." }`
+### Data Integrity
+- **Separate Entries**: Anchor and repetition problems are separate database entries
+- **Historical Accuracy**: Original completion dates preserved
+- **Solve Count Sync**: Solve count synchronized across all entries for same problem
+- **Completion Locking**: Past day completions cannot be changed
+- **Orphan Prevention**: Deleting anchor problems also removes associated repetitions
 
 ## 🎨 UI Components
 
@@ -334,10 +277,10 @@ Daily Dashboard/
 - **Right Sidebar**: Calendar, daily motivation, and quick tips
 
 ### Daily View
-- **Problem Recommendations**: AI-enhanced problem suggestions
-- **Repetition Section**: Problems due for review today
+- **Problem Recommendations**: AI-enhanced problem suggestions with reasoning
+- **Repetition Section**: Up to 5 problems due for review today (topic-matched)
 - **Today's Problems**: Problems added today with add form
-- **Backlog Section**: Missed repetition problems
+- **Backlog Section**: Missed repetition problems grouped by topic
 
 ### All Problems View
 - **Today's Overview**: Quick summary with links to sections
@@ -349,118 +292,33 @@ Daily Dashboard/
 - **Overview Cards**: Total, completed, pending, completion rate
 - **Streak & Weekly Progress**: Visual progress indicators
 - **By Difficulty**: Breakdown with progress bars
-- **By Topic**: Comprehensive topic statistics
+- **By Topic**: Comprehensive topic statistics with progress bars
 
 ### Practice Plan View
 - **Editable Table**: Weekly schedule with anchor and repetition topics
 - **Add/Edit/Delete**: Full CRUD operations
 - **Today Highlighting**: Current day highlighted in blue
+- **Tips Section**: Helpful information about practice planning
 
-## 🔄 Workflow
+## 📝 Technical Notes
 
-### Daily Routine
-1. **View Recommendations**: Check today's recommended problems (from curated list)
-2. **Add New Problems**: Add problems for today's anchor topic
-3. **Review Repetitions**: Complete problems from 3 days ago
-4. **Clear Backlog**: Work on any missed repetition problems when time permits
+- **Date Handling**: All dates stored in UTC, displayed in local timezone
+- **Caching**: Statistics and calendar data cached for 30 seconds for performance
+- **Database Indexes**: Optimized indexes for fast queries on type, dates, and topics
+- **Error Handling**: Comprehensive error handling with user-friendly messages
+- **Performance**: Optimized queries with `.lean()`, parallel queries, and efficient aggregations
+- **Mobile Optimization**: Responsive design with compact UI for screens ≤425px
+- **Real-time Sync**: State synchronized across components with auto-refresh (pauses during editing)
 
-### Problem Lifecycle
-1. **Add Problem**: Problem is added with `type: 'anchor'` and `repetitionDate` set to 3 days later
-2. **Complete Problem**: Mark as complete, increments `solveCount`
-3. **Repetition Day**: Problem appears in repetition section (if not completed)
-4. **Missed Repetition**: If not completed on repetition day, moves to backlog
-5. **Backlog Completion**: Complete backlog problems anytime
+## 🚀 Getting Started
 
-## 🎯 Smart Features Explained
+1. Set up MongoDB connection in backend `.env`
+2. Configure Groq API key (optional) for AI recommendations
+3. Start backend server: `npm start` in `backend/` directory
+4. Start frontend: `npm run dev` in `frontend/` directory
+5. Initialize practice plan from Practice Plan tab
+6. Start adding problems and tracking your progress!
 
-### Spaced Repetition Logic
-- Problems are scheduled for repetition exactly 3 days after being added
-- The repetition date is calculated based on your customizable practice plan
-- If a problem is not completed on its repetition day, it moves to backlog
-- Backlog problems persist until completed
+---
 
-### Recommendation System
-- **Curated List**: 96 problems with prerequisites and learning order
-- **Prerequisite Checking**: Only recommends problems whose prerequisites are solved
-- **Topic Prioritization**: Prioritizes problems from today's anchor topic
-- **AI Enhancement**: Uses Groq Cloud AI to provide personalized reasoning
-- **Fallback**: Basic recommendations if AI is unavailable
-
-### Duplicate Handling
-- If you add a problem that already exists, the system:
-  - Increments the `solveCount` instead of creating a duplicate
-  - Creates a new entry for tracking (for repetition purposes)
-  - Syncs solve count across all entries for the same problem
-
-## 🔧 Configuration
-
-### Environment Variables
-
-**Backend (`.env`):**
-- `MONGODB_URI`: MongoDB connection string
-- `PORT`: Server port (default: 5000)
-- `FRONTEND_URL`: Frontend URL for CORS (default: http://localhost:5173)
-- `GROQ_API_KEY`: Groq Cloud API key for AI recommendations (optional)
-
-**Frontend (`.env`):**
-- `VITE_API_URL`: Backend API URL (default: http://localhost:5000/api)
-
-## 🐛 Troubleshooting
-
-### MongoDB Connection Issues
-- Verify your connection string in `.env`
-- Check that your IP is whitelisted in MongoDB Atlas
-- Ensure your MongoDB Atlas cluster is running
-- Verify database name matches in connection string
-
-### CORS Errors
-- Make sure `FRONTEND_URL` in backend `.env` matches your frontend URL
-- Check that both servers are running
-- Verify no typos in URLs
-
-### Port Already in Use
-- Change the `PORT` in backend `.env`
-- Update `VITE_API_URL` in frontend `.env` accordingly
-- Kill any processes using the ports
-
-### Groq API Issues
-- Verify your API key is correct
-- Check Groq Cloud console for API limits
-- System will fall back to basic recommendations if API fails
-- Ensure you have internet connection for API calls
-
-### Problem Not Fetching from LeetCode
-- Check internet connection
-- Verify problem number is correct
-- Some problems may not be available via the API
-- You can manually enter problem details
-
-## 📝 Notes
-
-- **Solve Count**: Tracks how many times you've solved each problem across all entries
-- **Custom Topics**: Automatically added to topic lists when created
-- **Smart Topic Detection**: Warns if a similar topic already exists (case-insensitive)
-- **Date Handling**: All dates are stored in UTC but displayed in local timezone
-- **Calendar**: Shows activity for last 365 days with color-coded intensity
-
-## 🚀 Deployment
-
-### Backend Deployment
-1. Set environment variables on your hosting platform
-2. Ensure MongoDB Atlas allows connections from your server IP
-3. Deploy to platforms like Heroku, Railway, Render, or Vercel
-
-### Frontend Deployment
-1. Update `VITE_API_URL` to point to your deployed backend
-2. Build the project: `npm run build`
-3. Deploy `dist` folder to platforms like Vercel, Netlify, or GitHub Pages
-
-## 📄 License
-
-ISC
-
-## 🙏 Acknowledgments
-
-- LeetCode for problem data structure inspiration
-- Groq Cloud for AI-powered recommendations
-- React and Tailwind CSS communities
+**Built for personal use** - A comprehensive tool to maintain consistency in LeetCode practice with intelligent spaced repetition and progress tracking.

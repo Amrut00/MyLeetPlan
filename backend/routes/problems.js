@@ -2,6 +2,11 @@ import express from 'express';
 import Problem from '../models/Problem.js';
 import { getRepetitionDateFromPlan } from '../utils/dayUtils.js';
 import { clearCalendarCache, clearStatsCache } from './stats.js';
+import { 
+  calculateInterval, 
+  findNextTopicDay, 
+  calculateMasteryLevel 
+} from '../utils/spacedRepetition.js';
 
 const router = express.Router();
 
@@ -210,6 +215,70 @@ router.patch('/:id/complete', async (req, res) => {
           { problemNumber: currentProblem.problemNumber },
           { $set: { solveCount: newSolveCount } }
         );
+
+        // Calculate next repetition dates for the anchor problem
+        if (currentProblem.originalProblemId) {
+          const anchorProblem = await Problem.findById(currentProblem.originalProblemId);
+          if (anchorProblem) {
+            const interval = calculateInterval(newSolveCount, anchorProblem.difficulty);
+            const nextRepetitionDate = new Date(now);
+            nextRepetitionDate.setDate(nextRepetitionDate.getDate() + interval);
+            nextRepetitionDate.setUTCHours(0, 0, 0, 0);
+            
+            const scheduledRepetitionDate = await findNextTopicDay(
+              anchorProblem.topic, 
+              nextRepetitionDate
+            );
+            
+            // Calculate mastery level
+            const masteryLevel = calculateMasteryLevel(
+              newSolveCount,
+              anchorProblem.failedCount || 0,
+              (anchorProblem.streakCount || 0) + 1 // Increment streak
+            );
+            
+            // Find the most recent completion date (anchor or any repetition)
+            let mostRecentCompletion = now;
+            if (anchorProblem.completedDate) {
+              const anchorCompletion = new Date(anchorProblem.completedDate);
+              if (anchorCompletion > mostRecentCompletion) {
+                mostRecentCompletion = anchorCompletion;
+              }
+            }
+            
+            // Check all repetition completions for this anchor
+            const allRepetitionCompletions = await Problem.find({
+              type: 'repetition',
+              originalProblemId: anchorProblem._id,
+      isCompleted: true,
+              repetitionCompletedDate: { $exists: true, $ne: null }
+            }).select('repetitionCompletedDate').sort({ repetitionCompletedDate: -1 }).limit(1).lean();
+            
+            if (allRepetitionCompletions.length > 0) {
+              const latestRepCompletion = new Date(allRepetitionCompletions[0].repetitionCompletedDate);
+              if (latestRepCompletion > mostRecentCompletion) {
+                mostRecentCompletion = latestRepCompletion;
+              }
+            }
+            
+            // Update anchor problem with new repetition dates
+            await Problem.findByIdAndUpdate(
+              currentProblem.originalProblemId,
+              {
+                lastCompletedDate: mostRecentCompletion,
+                nextRepetitionDate: nextRepetitionDate,
+                scheduledRepetitionDate: scheduledRepetitionDate,
+                repetitionInterval: interval,
+                masteryLevel: masteryLevel,
+                streakCount: (anchorProblem.streakCount || 0) + 1
+              }
+            );
+            
+            // Clear caches since anchor problem was updated
+            clearCalendarCache();
+            clearStatsCache();
+          }
+        }
       }
     } else {
       // For anchor problems, use completedDate as before
@@ -247,6 +316,50 @@ router.patch('/:id/complete', async (req, res) => {
         { problemNumber: currentProblem.problemNumber },
         { $set: { solveCount: newSolveCount } }
       );
+
+      // Calculate next repetition dates for anchor problem
+      const interval = calculateInterval(newSolveCount, currentProblem.difficulty);
+      const nextRepetitionDate = new Date(now);
+      nextRepetitionDate.setDate(nextRepetitionDate.getDate() + interval);
+      nextRepetitionDate.setUTCHours(0, 0, 0, 0);
+      
+      const scheduledRepetitionDate = await findNextTopicDay(
+        currentProblem.topic, 
+        nextRepetitionDate
+      );
+      
+      // Calculate mastery level
+      const masteryLevel = calculateMasteryLevel(
+        newSolveCount,
+        currentProblem.failedCount || 0,
+        (currentProblem.streakCount || 0) + 1 // Increment streak
+      );
+      
+      // Find the most recent completion date (this anchor or any repetition)
+      let mostRecentCompletion = now;
+      
+      // Check all repetition completions for this anchor
+      const allRepetitionCompletions = await Problem.find({
+        type: 'repetition',
+        originalProblemId: currentProblem._id,
+        isCompleted: true,
+        repetitionCompletedDate: { $exists: true, $ne: null }
+      }).select('repetitionCompletedDate').sort({ repetitionCompletedDate: -1 }).limit(1).lean();
+      
+      if (allRepetitionCompletions.length > 0) {
+        const latestRepCompletion = new Date(allRepetitionCompletions[0].repetitionCompletedDate);
+        if (latestRepCompletion > mostRecentCompletion) {
+          mostRecentCompletion = latestRepCompletion;
+        }
+      }
+      
+      // Update anchor problem with new repetition dates
+      updateData.lastCompletedDate = mostRecentCompletion;
+      updateData.nextRepetitionDate = nextRepetitionDate;
+      updateData.scheduledRepetitionDate = scheduledRepetitionDate;
+      updateData.repetitionInterval = interval;
+      updateData.masteryLevel = masteryLevel;
+      updateData.streakCount = (currentProblem.streakCount || 0) + 1;
       }
     }
 
@@ -326,6 +439,12 @@ router.put('/:id', async (req, res) => {
     const { id } = req.params;
     const { problemNumber, topic, repetitionDate, difficulty, notes } = req.body;
 
+    // Get current problem to check if topic is changing
+    const currentProblem = await Problem.findById(id);
+    if (!currentProblem) {
+      return res.status(404).json({ error: 'Problem not found' });
+    }
+
     const updateData = {};
     if (problemNumber !== undefined) updateData.problemNumber = problemNumber.toString().trim();
     if (req.body.problemSlug !== undefined) updateData.problemSlug = req.body.problemSlug.toString().trim();
@@ -334,15 +453,28 @@ router.put('/:id', async (req, res) => {
     if (difficulty !== undefined) updateData.difficulty = difficulty;
     if (notes !== undefined) updateData.notes = notes;
 
+    // If topic changed and problem is an anchor, recalculate scheduledRepetitionDate
+    if (topic !== undefined && topic !== currentProblem.topic && currentProblem.type === 'anchor') {
+      const fromDate = currentProblem.scheduledRepetitionDate || currentProblem.nextRepetitionDate || new Date();
+      const newScheduledDate = await findNextTopicDay(topic, fromDate);
+      updateData.scheduledRepetitionDate = newScheduledDate;
+    }
+
+    // If repetitionDate is manually updated, also update scheduledRepetitionDate
+    if (repetitionDate !== undefined && currentProblem.type === 'anchor') {
+      const newScheduledDate = await findNextTopicDay(
+        updateData.topic || currentProblem.topic, 
+        new Date(repetitionDate)
+      );
+      updateData.scheduledRepetitionDate = newScheduledDate;
+      updateData.nextRepetitionDate = new Date(repetitionDate);
+    }
+
     const problem = await Problem.findByIdAndUpdate(
       id,
       updateData,
       { new: true, runValidators: true }
     );
-
-    if (!problem) {
-      return res.status(404).json({ error: 'Problem not found' });
-    }
 
     // Clear caches if dates or completion status might have changed
     clearCalendarCache();
@@ -435,6 +567,73 @@ router.patch('/:id/uncomplete', async (req, res) => {
           { problemNumber: currentProblem.problemNumber },
           { $set: { solveCount: newSolveCount } }
         );
+        
+        // Recalculate anchor problem's dates if this was a repetition
+        if (currentProblem.originalProblemId) {
+          const anchorProblem = await Problem.findById(currentProblem.originalProblemId);
+          if (anchorProblem) {
+            // Find the most recent completion date (anchor or any remaining repetition)
+            let mostRecentCompletion = null;
+            if (anchorProblem.completedDate) {
+              mostRecentCompletion = new Date(anchorProblem.completedDate);
+            }
+            
+            // Check all remaining repetition completions
+            const remainingRepetitionCompletions = await Problem.find({
+              type: 'repetition',
+              originalProblemId: anchorProblem._id,
+              isCompleted: true,
+              repetitionCompletedDate: { $exists: true, $ne: null }
+            }).select('repetitionCompletedDate').sort({ repetitionCompletedDate: -1 }).limit(1).lean();
+            
+            if (remainingRepetitionCompletions.length > 0) {
+              const latestRepCompletion = new Date(remainingRepetitionCompletions[0].repetitionCompletedDate);
+              if (!mostRecentCompletion || latestRepCompletion > mostRecentCompletion) {
+                mostRecentCompletion = latestRepCompletion;
+              }
+            }
+            
+            // Recalculate next repetition dates if there's a completion
+            if (mostRecentCompletion) {
+              const interval = calculateInterval(newSolveCount, anchorProblem.difficulty);
+              const nextRepetitionDate = new Date(mostRecentCompletion);
+              nextRepetitionDate.setDate(nextRepetitionDate.getDate() + interval);
+              nextRepetitionDate.setUTCHours(0, 0, 0, 0);
+              
+              const scheduledRepetitionDate = await findNextTopicDay(
+                anchorProblem.topic,
+                nextRepetitionDate
+              );
+              
+              const masteryLevel = calculateMasteryLevel(
+                newSolveCount,
+                anchorProblem.failedCount || 0,
+                anchorProblem.streakCount || 0
+              );
+              
+              await Problem.findByIdAndUpdate(
+                currentProblem.originalProblemId,
+                {
+                  lastCompletedDate: mostRecentCompletion,
+                  nextRepetitionDate: nextRepetitionDate,
+                  scheduledRepetitionDate: scheduledRepetitionDate,
+                  repetitionInterval: interval,
+                  masteryLevel: masteryLevel
+                }
+              );
+            } else {
+              // No completions left, reset dates
+              await Problem.findByIdAndUpdate(
+                currentProblem.originalProblemId,
+                {
+                  $unset: { lastCompletedDate: 1, nextRepetitionDate: 1, scheduledRepetitionDate: 1 },
+                  repetitionInterval: 1,
+                  masteryLevel: 'new'
+                }
+              );
+            }
+          }
+        }
       }
     } else {
       // For anchor problems, unset completedDate
@@ -467,6 +666,57 @@ router.patch('/:id/uncomplete', async (req, res) => {
         { problemNumber: currentProblem.problemNumber },
         { $set: { solveCount: newSolveCount } }
       );
+      
+      // Recalculate next repetition dates for anchor problem
+      if (currentProblem.type === 'anchor') {
+        // Find the most recent completion date (any remaining repetition)
+        let mostRecentCompletion = null;
+        
+        // Check all repetition completions for this anchor
+        const allRepetitionCompletions = await Problem.find({
+          type: 'repetition',
+          originalProblemId: currentProblem._id,
+          isCompleted: true,
+          repetitionCompletedDate: { $exists: true, $ne: null }
+        }).select('repetitionCompletedDate').sort({ repetitionCompletedDate: -1 }).limit(1).lean();
+        
+        if (allRepetitionCompletions.length > 0) {
+          mostRecentCompletion = new Date(allRepetitionCompletions[0].repetitionCompletedDate);
+        }
+        
+        // Recalculate next repetition dates if there's a completion
+        if (mostRecentCompletion) {
+          const interval = calculateInterval(newSolveCount, currentProblem.difficulty);
+          const nextRepetitionDate = new Date(mostRecentCompletion);
+          nextRepetitionDate.setDate(nextRepetitionDate.getDate() + interval);
+          nextRepetitionDate.setUTCHours(0, 0, 0, 0);
+          
+          const scheduledRepetitionDate = await findNextTopicDay(
+            currentProblem.topic,
+            nextRepetitionDate
+          );
+          
+          const masteryLevel = calculateMasteryLevel(
+            newSolveCount,
+            currentProblem.failedCount || 0,
+            currentProblem.streakCount || 0
+          );
+          
+          updateData.lastCompletedDate = mostRecentCompletion;
+          updateData.nextRepetitionDate = nextRepetitionDate;
+          updateData.scheduledRepetitionDate = scheduledRepetitionDate;
+          updateData.repetitionInterval = interval;
+          updateData.masteryLevel = masteryLevel;
+        } else {
+          // No completions left, reset dates
+          if (!updateData.$unset) updateData.$unset = {};
+          updateData.$unset.lastCompletedDate = 1;
+          updateData.$unset.nextRepetitionDate = 1;
+          updateData.$unset.scheduledRepetitionDate = 1;
+          updateData.repetitionInterval = 1;
+          updateData.masteryLevel = 'new';
+        }
+      }
       }
     }
 
@@ -499,11 +749,22 @@ router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    const problem = await Problem.findByIdAndDelete(id);
+    const problem = await Problem.findById(id);
 
     if (!problem) {
       return res.status(404).json({ error: 'Problem not found' });
     }
+
+    // If deleting an anchor problem, also delete all its repetition entries
+    if (problem.type === 'anchor') {
+      await Problem.deleteMany({
+        type: 'repetition',
+        originalProblemId: problem._id
+      });
+    }
+
+    // Delete the problem
+    await Problem.findByIdAndDelete(id);
 
     // Clear caches since problem was deleted
     clearCalendarCache();

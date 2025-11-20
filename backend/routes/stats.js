@@ -196,10 +196,22 @@ router.get('/', async (req, res) => {
     anchorCompletionsByDate.forEach(item => completionsByDate.add(item._id));
     repetitionCompletionsByDate.forEach(item => completionsByDate.add(item._id));
     
-    // Calculate streak: consecutive days from today backwards
+    // Calculate streak: consecutive days with completions
+    // Start from today and count backwards until we find a day without completion
+    // If today has no completion, start from yesterday
     let streak = 0;
     let currentDate = new Date(todayStartUTC);
     
+    // First, check if today has a completion
+    const todayStr = `${currentDate.getUTCFullYear()}-${String(currentDate.getUTCMonth() + 1).padStart(2, '0')}-${String(currentDate.getUTCDate()).padStart(2, '0')}`;
+    const todayHasCompletion = completionsByDate.has(todayStr);
+    
+    // If today doesn't have a completion, start from yesterday
+    if (!todayHasCompletion) {
+      currentDate.setUTCDate(currentDate.getUTCDate() - 1);
+    }
+    
+    // Count consecutive days with completions going backwards
     // Check up to 365 days back
     for (let i = 0; i < 365; i++) {
       const dateStr = `${currentDate.getUTCFullYear()}-${String(currentDate.getUTCMonth() + 1).padStart(2, '0')}-${String(currentDate.getUTCDate()).padStart(2, '0')}`;
