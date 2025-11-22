@@ -1,6 +1,6 @@
 import express from 'express';
 import Problem from '../models/Problem.js';
-import { generateSmartRecommendations } from '../utils/recommendations.js';
+import { generateSmartRecommendations, loadCuratedProblems } from '../utils/recommendations.js';
 
 const router = express.Router();
 
@@ -44,11 +44,15 @@ router.get('/', async (req, res) => {
                           recommendations.pair[0].reasoning && 
                           recommendations.pair[0].reasoning.length > 100; // AI reasoning is usually longer
     
+    // Get total count from curated problems list
+    const curatedProblems = loadCuratedProblems();
+    const totalInCuratedList = curatedProblems.length;
+    
     res.json({
       success: true,
       recommendations,
       solvedCount: solvedProblems.length,
-      totalInCuratedList: 96, // Total problems in curated list (updated from 70 to 96)
+      totalInCuratedList: totalInCuratedList, // Dynamically get total from curated list
       source: 'curated-list', // Always from curated list
       aiEnhanced: hasAIReasoning, // Whether AI reasoning was used
       groqAvailable: !!process.env.GROQ_API_KEY, // Whether Groq API key is configured

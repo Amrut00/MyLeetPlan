@@ -64,11 +64,11 @@ The system uses an intelligent spaced repetition algorithm that adapts to your p
 - Can be completed anytime to clear the backlog
 
 ### 🤖 Smart Recommendations
-- **Curated Problem List**: 96 carefully selected problems with prerequisites and learning order
+- **Curated Problem List**: Carefully selected problems with prerequisites and learning order
 - **AI-Enhanced Reasoning**: Groq Cloud AI provides personalized explanations for problem recommendations
 - **Prerequisite Tracking**: System ensures you solve problems in the correct order
 - **Topic-Based Suggestions**: Prioritizes problems from today's anchor topic
-- **Progress Tracking**: Shows X/96 problems solved from the curated list
+- **Progress Tracking**: Shows X/Y problems solved from the curated list (Y = total in curated list)
 
 ### 📊 Progress Tracking
 
@@ -255,7 +255,7 @@ Each problem includes:
 - **Topic Day Finding**: Uses practice plan to find next occurrence of problem's topic
 
 ### Recommendation System
-- **Curated List**: 96 problems with prerequisites and learning order
+- **Curated List**: Problems with prerequisites and learning order (dynamically updated)
 - **Prerequisite Checking**: Only recommends problems whose prerequisites are solved
 - **Topic Prioritization**: Prioritizes problems from today's anchor topic
 - **AI Enhancement**: Uses Groq Cloud AI to provide personalized reasoning
