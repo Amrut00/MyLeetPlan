@@ -120,12 +120,11 @@ router.get('/dashboard', async (req, res) => {
     // Return only the limited set
     const repetitionProblems = allTodayRepetitions.slice(0, DAILY_REPETITION_LIMIT);
 
-    // Get backlog: ONLY repetition type entries where scheduledRepetitionDate is in the past
-    // and they match today's repetition topic
+    // Get backlog: ALL repetition type entries where scheduledRepetitionDate is in the past
     // BACKLOG = Problems that were due for repetition but weren't completed on that day
+    // Show all overdue problems regardless of topic (not just today's topic)
     const backlogProblems = await Problem.find({
       type: 'repetition',
-      topic: repetitionTopic, // Only show today's topic backlog
       $or: [
         { scheduledRepetitionDate: { $lt: todayStartUTC } },
         { repetitionDate: { $lt: todayStartUTC } } // Fallback for legacy data
@@ -133,7 +132,7 @@ router.get('/dashboard', async (req, res) => {
       isCompleted: false // Not yet completed (missed their repetition day)
     })
     .sort({ scheduledRepetitionDate: 1, repetitionDate: 1 }) // Sort by when they were due (oldest first)
-    .limit(DAILY_REPETITION_LIMIT); // Limit backlog to daily limit
+    .limit(DAILY_REPETITION_LIMIT * 2); // Allow more backlog items than daily limit
 
     // Get count of problems added today
     const todayAddedCount = await Problem.countDocuments({
