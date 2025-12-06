@@ -9,7 +9,8 @@
     "dev": "nodemon server.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "migrate:smart-repetition": "node scripts/migrateToSmartRepetition.js",
-    "verify:migration": "node scripts/verifyMigration.js"
+    "verify:migration": "node scripts/verifyMigration.js",
+    "cleanup:duplicates": "node scripts/cleanupDuplicateRepetitions.js"
   },
   "keywords": [],
   "author": "",

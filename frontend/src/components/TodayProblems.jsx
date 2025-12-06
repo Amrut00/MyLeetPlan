@@ -28,6 +28,9 @@ function TodayProblems({ anchorTopic, onAddProblems, onUpdate }) {
       
       const allProblems = await getAllProblems({});
       const todayAdded = allProblems.filter(p => {
+        // Only show anchor problems (not repetition entries) as "added today"
+        if (p.type === 'repetition') return false;
+        
         const source = p.createdAt || p.addedDate;
         if (!source) return false;
         const d = new Date(source);
