@@ -13,6 +13,8 @@ import QuickStats from './QuickStats';
 import ProblemRecommendations from './ProblemRecommendations';
 import DailyMotivation from './DailyMotivation';
 import QuickTips from './QuickTips';
+import Guide from './Guide';
+import WelcomeModal from './WelcomeModal';
 import { 
   HiOutlineBookOpen,
   HiOutlineCalendar,
@@ -21,7 +23,8 @@ import {
   HiOutlineSparkles,
   HiOutlineBars3,
   HiOutlineXMark,
-  HiOutlineArrowRightOnRectangle
+  HiOutlineArrowRightOnRectangle,
+  HiOutlineAcademicCap
 } from 'react-icons/hi2';
 
 function Dashboard() {
@@ -35,6 +38,21 @@ function Dashboard() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCalendarCardOpen, setIsCalendarCardOpen] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
+
+  // Show the welcome tour once per user (first time they reach the dashboard)
+  const tourKey = user?.id ? `myleetplan_tour_seen_v1_${user.id}` : null;
+  useEffect(() => {
+    if (!tourKey) return;
+    if (!localStorage.getItem(tourKey)) {
+      setShowWelcome(true);
+    }
+  }, [tourKey]);
+
+  const handleCloseWelcome = () => {
+    setShowWelcome(false);
+    if (tourKey) localStorage.setItem(tourKey, '1');
+  };
 
   const fetchDashboard = async (silent = false) => {
     try {
@@ -242,6 +260,21 @@ function Dashboard() {
                         </span>
                       </span>
                     </button>
+                    <button
+                      onClick={() => setView('guide')}
+                      className={`px-4 py-2 rounded-lg transition-all duration-200 font-medium text-sm ${
+                        view === 'guide'
+                          ? 'bg-dark-bg-hover shadow-md border border-dark-border-light font-semibold'
+                          : 'text-dark-text-secondary hover:text-dark-text hover:bg-dark-bg-hover'
+                      }`}
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <HiOutlineAcademicCap className={`w-4 h-4 ${view === 'guide' ? 'text-blue-500' : 'text-inherit'}`} />
+                        <span className={view === 'guide' ? 'bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent' : ''}>
+                          Guide
+                        </span>
+                      </span>
+                    </button>
                   </div>
             </div>
 
@@ -379,6 +412,13 @@ function Dashboard() {
               <span className={view === 'plan' ? 'bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent' : ''}>Practice Plan</span>
             </button>
             <button
+              onClick={() => { setView('guide'); setIsMobileMenuOpen(false); }}
+              className={`w-full text-left px-3 py-2 rounded-lg transition-all duration-200 font-medium text-sm flex items-center gap-2 border ${view === 'guide' ? 'bg-dark-bg-hover border-dark-border-light' : 'border-dark-border hover:bg-dark-bg-hover text-dark-text-secondary hover:text-dark-text'}`}
+            >
+              <HiOutlineAcademicCap className={`w-5 h-5 ${view === 'guide' ? 'text-blue-500' : ''}`} />
+              <span className={view === 'guide' ? 'bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent' : ''}>Guide</span>
+            </button>
+            <button
               onClick={() => { setIsMobileMenuOpen(false); logout(); }}
               className="w-full text-left px-3 py-2 rounded-lg transition-all duration-200 font-medium text-sm flex items-center gap-2 border border-dark-border hover:bg-dark-bg-hover text-dark-text-secondary hover:text-dark-text"
             >
@@ -453,6 +493,8 @@ function Dashboard() {
 
             {view === 'stats' ? (
               <Statistics />
+            ) : view === 'guide' ? (
+              <Guide onReplayTour={() => setShowWelcome(true)} />
             ) : view === 'plan' ? (
               <PracticePlan onUpdate={fetchDashboard} />
             ) : view === 'all' ? (
@@ -577,6 +619,13 @@ function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* First-run welcome tour */}
+      <WelcomeModal
+        isOpen={showWelcome}
+        onClose={handleCloseWelcome}
+        onGoToGuide={() => { handleCloseWelcome(); setView('guide'); }}
+      />
     </div>
   );
 }
