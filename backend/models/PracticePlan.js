@@ -1,12 +1,16 @@
 import mongoose from 'mongoose';
 
 const practicePlanSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
   dayOfWeek: {
     type: Number,
     required: true,
     min: 0,
-    max: 6,
-    unique: true
+    max: 6
     // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
   },
   anchorTopic: {
@@ -23,7 +27,8 @@ const practicePlanSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Mongoose will create a unique index for dayOfWeek from the schema definition above.
+// Each user has at most one plan entry per day of the week.
+practicePlanSchema.index({ userId: 1, dayOfWeek: 1 }, { unique: true });
 
 const PracticePlan = mongoose.model('PracticePlan', practicePlanSchema);
 

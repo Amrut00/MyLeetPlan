@@ -312,12 +312,33 @@ Each problem includes:
 
 ## 🚀 Getting Started
 
-1. Set up MongoDB connection in backend `.env`
-2. Configure Groq API key (optional) for AI recommendations
-3. Start backend server: `npm start` in `backend/` directory
-4. Start frontend: `npm run dev` in `frontend/` directory
-5. Initialize practice plan from Practice Plan tab
-6. Start adding problems and tracking your progress!
+1. Set up MongoDB connection in backend `.env` (`MONGODB_URI`)
+2. Set `JWT_SECRET` in backend `.env` to a long random string (required for auth)
+3. Configure Groq API key (optional) for AI recommendations
+4. Start backend server: `npm start` in `backend/` directory
+5. Start frontend: `npm run dev` in `frontend/` directory
+6. Register an account, then start adding problems and tracking your progress!
+
+## 👥 Multi-User
+
+The app supports multiple users. Each account has its own problems, progress,
+statistics, and weekly practice plan; the curated recommendation list is shared
+(read-only). Authentication uses email + password with JWT tokens.
+
+**Required environment variable (backend):** `JWT_SECRET` — a long random secret
+used to sign login tokens.
+
+### Migrating pre-existing single-user data
+
+If you already have data from the single-user version, assign it to your account:
+
+1. Start the backend once (it auto-drops the obsolete `dayOfWeek_1` index).
+2. Register your owner account through the app (this seeds a default plan).
+3. Run: `npm run migrate:multiuser -- your@email.com` in `backend/`.
+
+The script reassigns all pre-existing problems and your practice plan to your
+account (replacing the freshly-seeded default plan). It only touches documents
+that don't yet have an owner, so it's safe to re-run.
 
 ---
 

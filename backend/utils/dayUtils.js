@@ -68,15 +68,15 @@ export function getRepetitionDate() {
  * Get repetition date based on practice plan
  * Finds the next day when the given topic is scheduled as the repetition topic
  */
-export async function getRepetitionDateFromPlan(topic) {
+export async function getRepetitionDateFromPlan(topic, userId) {
   // Import here to avoid circular dependency
   const PracticePlan = (await import('../models/PracticePlan.js')).default;
-  
+
   const today = new Date();
   const todayDayOfWeek = today.getDay();
-  
-  // Get all practice plans
-  const plans = await PracticePlan.find().sort({ dayOfWeek: 1 });
+
+  // Get all practice plans for this user
+  const plans = await PracticePlan.find({ userId }).sort({ dayOfWeek: 1 });
   
   if (plans.length === 0) {
     // No custom plan, fallback to 3 days

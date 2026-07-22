@@ -24,7 +24,7 @@ router.post('/', async (req, res) => {
     }
 
     // Get repetition date based on practice plan
-    const repetitionDate = await getRepetitionDateFromPlan(topic);
+    const repetitionDate = await getRepetitionDateFromPlan(topic, req.userId);
     // UTC day bounds
     const todayStartUTC = new Date();
     todayStartUTC.setUTCHours(0, 0, 0, 0);
@@ -45,11 +45,13 @@ router.post('/', async (req, res) => {
 
       // Check if this problem already exists (same problem number)
       const existingProblem = await Problem.findOne({
+        userId: req.userId,
         problemNumber: problemNumber
       }).sort({ createdAt: -1 }); // Get the most recent one
 
       // If already added today (UTC), do not create a new one
       const existingToday = await Problem.findOne({
+        userId: req.userId,
         problemNumber: problemNumber,
         createdAt: { $gte: todayStartUTC, $lte: todayEndUTC }
       });
@@ -66,6 +68,7 @@ router.post('/', async (req, res) => {
       if (existingProblem) {
         // Problem already exists - get the highest solve count
         const maxSolveCount = await Problem.findOne({
+          userId: req.userId,
           problemNumber: problemNumber
         }).sort({ solveCount: -1 });
         
@@ -81,6 +84,7 @@ router.post('/', async (req, res) => {
 
         // Create a new entry for today (for repetition tracking)
         const newProblem = new Problem({
+          userId: req.userId,
           problemNumber: problemNumber,
           problemSlug: finalSlug,
           problemTitle: problemTitle || existingProblem.problemTitle || '',
@@ -104,6 +108,7 @@ router.post('/', async (req, res) => {
       } else {
         // New problem - create it
         const newProblem = new Problem({
+          userId: req.userId,
           problemNumber: problemNumber,
           problemSlug: problemSlug,
           problemTitle: problemTitle || '',
@@ -148,8 +153,8 @@ router.patch('/:id/complete', async (req, res) => {
     const { id } = req.params;
 
     // Get the current problem to check if it's already completed
-    const currentProblem = await Problem.findById(id);
-    
+    const currentProblem = await Problem.findOne({ _id: id, userId: req.userId });
+
     if (!currentProblem) {
       return res.status(404).json({ error: 'Problem not found' });
     }
@@ -193,7 +198,7 @@ router.patch('/:id/complete', async (req, res) => {
       if (!currentProblem.isCompleted) {
         // Check if already solved today (anchor or repetition) to prevent double-counting
         const alreadySolvedToday = await Problem.exists({
-          problemNumber: currentProblem.problemNumber,
+          userId: req.userId, problemNumber: currentProblem.problemNumber,
           $or: [
             { type: 'anchor', completedDate: { $gte: todayStartUTC, $lte: todayEndUTC }, isCompleted: true },
             { type: 'repetition', repetitionCompletedDate: { $gte: todayStartUTC, $lte: todayEndUTC }, isCompleted: true }
@@ -202,7 +207,7 @@ router.patch('/:id/complete', async (req, res) => {
 
         // Find the maximum solve count for this problem number across all entries
         const maxSolveCountDoc = await Problem.findOne({
-          problemNumber: currentProblem.problemNumber
+          userId: req.userId, problemNumber: currentProblem.problemNumber
         }).sort({ solveCount: -1 });
         const currentMax = maxSolveCountDoc?.solveCount || currentProblem.solveCount || 0;
 
@@ -212,13 +217,13 @@ router.patch('/:id/complete', async (req, res) => {
 
         // Sync solve count across all entries for this problem number (both anchor and repetition)
         await Problem.updateMany(
-          { problemNumber: currentProblem.problemNumber },
+          { userId: req.userId, problemNumber: currentProblem.problemNumber },
           { $set: { solveCount: newSolveCount } }
         );
 
         // Calculate next repetition dates for the anchor problem
         if (currentProblem.originalProblemId) {
-          const anchorProblem = await Problem.findById(currentProblem.originalProblemId);
+          const anchorProblem = await Problem.findOne({ _id: currentProblem.originalProblemId, userId: req.userId });
           if (anchorProblem) {
             const interval = calculateInterval(newSolveCount, anchorProblem.difficulty);
             const nextRepetitionDate = new Date(now);
@@ -226,8 +231,9 @@ router.patch('/:id/complete', async (req, res) => {
             nextRepetitionDate.setUTCHours(0, 0, 0, 0);
             
             const scheduledRepetitionDate = await findNextTopicDay(
-              anchorProblem.topic, 
-              nextRepetitionDate
+              anchorProblem.topic,
+              nextRepetitionDate,
+              req.userId
             );
             
             // Calculate mastery level
@@ -248,6 +254,7 @@ router.patch('/:id/complete', async (req, res) => {
             
             // Check all repetition completions for this anchor
             const allRepetitionCompletions = await Problem.find({
+              userId: req.userId,
               type: 'repetition',
               originalProblemId: anchorProblem._id,
       isCompleted: true,
@@ -262,8 +269,8 @@ router.patch('/:id/complete', async (req, res) => {
             }
             
             // Update anchor problem with new repetition dates
-            await Problem.findByIdAndUpdate(
-              currentProblem.originalProblemId,
+            await Problem.findOneAndUpdate(
+              { _id: currentProblem.originalProblemId, userId: req.userId },
               {
                 lastCompletedDate: mostRecentCompletion,
                 nextRepetitionDate: nextRepetitionDate,
@@ -294,7 +301,7 @@ router.patch('/:id/complete', async (req, res) => {
 
         // Check if already solved today (anchor or repetition)
       const alreadySolvedToday = await Problem.exists({
-        problemNumber: currentProblem.problemNumber,
+        userId: req.userId, problemNumber: currentProblem.problemNumber,
           $or: [
             { type: 'anchor', completedDate: { $gte: todayStartUTC, $lte: todayEndUTC }, isCompleted: true },
             { type: 'repetition', repetitionCompletedDate: { $gte: todayStartUTC, $lte: todayEndUTC }, isCompleted: true }
@@ -303,7 +310,7 @@ router.patch('/:id/complete', async (req, res) => {
 
       // Find the maximum solve count for this problem number across all entries
       const maxSolveCountDoc = await Problem.findOne({
-        problemNumber: currentProblem.problemNumber
+        userId: req.userId, problemNumber: currentProblem.problemNumber
       }).sort({ solveCount: -1 });
       const currentMax = maxSolveCountDoc?.solveCount || currentProblem.solveCount || 0;
 
@@ -313,7 +320,7 @@ router.patch('/:id/complete', async (req, res) => {
 
       // Sync solve count across all entries for this problem number
       await Problem.updateMany(
-        { problemNumber: currentProblem.problemNumber },
+        { userId: req.userId, problemNumber: currentProblem.problemNumber },
         { $set: { solveCount: newSolveCount } }
       );
 
@@ -324,8 +331,9 @@ router.patch('/:id/complete', async (req, res) => {
       nextRepetitionDate.setUTCHours(0, 0, 0, 0);
       
       const scheduledRepetitionDate = await findNextTopicDay(
-        currentProblem.topic, 
-        nextRepetitionDate
+        currentProblem.topic,
+        nextRepetitionDate,
+        req.userId
       );
       
       // Calculate mastery level
@@ -340,6 +348,7 @@ router.patch('/:id/complete', async (req, res) => {
       
       // Check all repetition completions for this anchor
       const allRepetitionCompletions = await Problem.find({
+        userId: req.userId,
         type: 'repetition',
         originalProblemId: currentProblem._id,
         isCompleted: true,
@@ -363,8 +372,8 @@ router.patch('/:id/complete', async (req, res) => {
       }
     }
 
-    const problem = await Problem.findByIdAndUpdate(
-      id,
+    const problem = await Problem.findOneAndUpdate(
+      { _id: id, userId: req.userId },
       updateData,
       { new: true }
     );
@@ -387,7 +396,7 @@ router.patch('/:id/complete', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const { completed, topic } = req.query;
-    const query = {};
+    const query = { userId: req.userId };
 
     if (completed !== undefined) {
       query.isCompleted = completed === 'true';
@@ -408,7 +417,7 @@ router.get('/', async (req, res) => {
 // Get all unique topics
 router.get('/topics', async (req, res) => {
   try {
-    const topics = await Problem.distinct('topic');
+    const topics = await Problem.distinct('topic', { userId: req.userId });
     res.json({ topics: topics.sort() });
   } catch (error) {
     console.error('Error fetching topics:', error);
@@ -420,7 +429,7 @@ router.get('/topics', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const problem = await Problem.findById(id);
+    const problem = await Problem.findOne({ _id: id, userId: req.userId });
 
     if (!problem) {
       return res.status(404).json({ error: 'Problem not found' });
@@ -440,7 +449,7 @@ router.put('/:id', async (req, res) => {
     const { problemNumber, topic, repetitionDate, difficulty, notes } = req.body;
 
     // Get current problem to check if topic is changing
-    const currentProblem = await Problem.findById(id);
+    const currentProblem = await Problem.findOne({ _id: id, userId: req.userId });
     if (!currentProblem) {
       return res.status(404).json({ error: 'Problem not found' });
     }
@@ -456,22 +465,23 @@ router.put('/:id', async (req, res) => {
     // If topic changed and problem is an anchor, recalculate scheduledRepetitionDate
     if (topic !== undefined && topic !== currentProblem.topic && currentProblem.type === 'anchor') {
       const fromDate = currentProblem.scheduledRepetitionDate || currentProblem.nextRepetitionDate || new Date();
-      const newScheduledDate = await findNextTopicDay(topic, fromDate);
+      const newScheduledDate = await findNextTopicDay(topic, fromDate, req.userId);
       updateData.scheduledRepetitionDate = newScheduledDate;
     }
 
     // If repetitionDate is manually updated, also update scheduledRepetitionDate
     if (repetitionDate !== undefined && currentProblem.type === 'anchor') {
       const newScheduledDate = await findNextTopicDay(
-        updateData.topic || currentProblem.topic, 
-        new Date(repetitionDate)
+        updateData.topic || currentProblem.topic,
+        new Date(repetitionDate),
+        req.userId
       );
       updateData.scheduledRepetitionDate = newScheduledDate;
       updateData.nextRepetitionDate = new Date(repetitionDate);
     }
 
-    const problem = await Problem.findByIdAndUpdate(
-      id,
+    const problem = await Problem.findOneAndUpdate(
+      { _id: id, userId: req.userId },
       updateData,
       { new: true, runValidators: true }
     );
@@ -495,7 +505,7 @@ router.patch('/:id/uncomplete', async (req, res) => {
   try {
     const { id } = req.params;
 
-    const currentProblem = await Problem.findById(id);
+    const currentProblem = await Problem.findOne({ _id: id, userId: req.userId });
     
     if (!currentProblem) {
       return res.status(404).json({ error: 'Problem not found' });
@@ -547,7 +557,7 @@ router.patch('/:id/uncomplete', async (req, res) => {
 
       // Count completions today (anchor or repetition)
     const completedTodayCount = await Problem.countDocuments({
-      problemNumber: currentProblem.problemNumber,
+      userId: req.userId, problemNumber: currentProblem.problemNumber,
       isCompleted: true,
         $or: [
           { type: 'anchor', completedDate: { $gte: todayStartUTC, $lte: todayEndUTC } },
@@ -558,19 +568,19 @@ router.patch('/:id/uncomplete', async (req, res) => {
       // If this was the only completion today, decrement solveCount
       if (wasCompletedToday && completedTodayCount === 1) {
         const maxSolveCountDoc = await Problem.findOne({
-          problemNumber: currentProblem.problemNumber
+          userId: req.userId, problemNumber: currentProblem.problemNumber
         }).sort({ solveCount: -1 });
         const currentMax = maxSolveCountDoc?.solveCount || currentProblem.solveCount || 0;
         const newSolveCount = Math.max(0, currentMax - 1);
 
         await Problem.updateMany(
-          { problemNumber: currentProblem.problemNumber },
+          { userId: req.userId, problemNumber: currentProblem.problemNumber },
           { $set: { solveCount: newSolveCount } }
         );
         
         // Recalculate anchor problem's dates if this was a repetition
         if (currentProblem.originalProblemId) {
-          const anchorProblem = await Problem.findById(currentProblem.originalProblemId);
+          const anchorProblem = await Problem.findOne({ _id: currentProblem.originalProblemId, userId: req.userId });
           if (anchorProblem) {
             // Find the most recent completion date (anchor or any remaining repetition)
             let mostRecentCompletion = null;
@@ -580,6 +590,7 @@ router.patch('/:id/uncomplete', async (req, res) => {
             
             // Check all remaining repetition completions
             const remainingRepetitionCompletions = await Problem.find({
+              userId: req.userId,
               type: 'repetition',
               originalProblemId: anchorProblem._id,
               isCompleted: true,
@@ -602,7 +613,8 @@ router.patch('/:id/uncomplete', async (req, res) => {
               
               const scheduledRepetitionDate = await findNextTopicDay(
                 anchorProblem.topic,
-                nextRepetitionDate
+                nextRepetitionDate,
+                req.userId
               );
               
               const masteryLevel = calculateMasteryLevel(
@@ -611,8 +623,8 @@ router.patch('/:id/uncomplete', async (req, res) => {
                 anchorProblem.streakCount || 0
               );
               
-              await Problem.findByIdAndUpdate(
-                currentProblem.originalProblemId,
+              await Problem.findOneAndUpdate(
+                { _id: currentProblem.originalProblemId, userId: req.userId },
                 {
                   lastCompletedDate: mostRecentCompletion,
                   nextRepetitionDate: nextRepetitionDate,
@@ -623,8 +635,8 @@ router.patch('/:id/uncomplete', async (req, res) => {
               );
             } else {
               // No completions left, reset dates
-              await Problem.findByIdAndUpdate(
-                currentProblem.originalProblemId,
+              await Problem.findOneAndUpdate(
+                { _id: currentProblem.originalProblemId, userId: req.userId },
                 {
                   $unset: { lastCompletedDate: 1, nextRepetitionDate: 1, scheduledRepetitionDate: 1 },
                   repetitionInterval: 1,
@@ -641,7 +653,7 @@ router.patch('/:id/uncomplete', async (req, res) => {
 
       // Count how many completions exist today BEFORE unmarking
       const completedTodayCount = await Problem.countDocuments({
-        problemNumber: currentProblem.problemNumber,
+        userId: req.userId, problemNumber: currentProblem.problemNumber,
         isCompleted: true,
         $or: [
           { type: 'anchor', completedDate: { $gte: todayStartUTC, $lte: todayEndUTC } },
@@ -657,13 +669,13 @@ router.patch('/:id/uncomplete', async (req, res) => {
 
     if (wasCompletedToday && completedTodayCount === 1) {
       const maxSolveCountDoc = await Problem.findOne({
-        problemNumber: currentProblem.problemNumber
+        userId: req.userId, problemNumber: currentProblem.problemNumber
       }).sort({ solveCount: -1 });
       const currentMax = maxSolveCountDoc?.solveCount || currentProblem.solveCount || 0;
       const newSolveCount = Math.max(0, currentMax - 1);
 
       await Problem.updateMany(
-        { problemNumber: currentProblem.problemNumber },
+        { userId: req.userId, problemNumber: currentProblem.problemNumber },
         { $set: { solveCount: newSolveCount } }
       );
       
@@ -674,6 +686,7 @@ router.patch('/:id/uncomplete', async (req, res) => {
         
         // Check all repetition completions for this anchor
         const allRepetitionCompletions = await Problem.find({
+          userId: req.userId,
           type: 'repetition',
           originalProblemId: currentProblem._id,
           isCompleted: true,
@@ -693,7 +706,8 @@ router.patch('/:id/uncomplete', async (req, res) => {
           
           const scheduledRepetitionDate = await findNextTopicDay(
             currentProblem.topic,
-            nextRepetitionDate
+            nextRepetitionDate,
+            req.userId
           );
           
           const masteryLevel = calculateMasteryLevel(
@@ -720,8 +734,8 @@ router.patch('/:id/uncomplete', async (req, res) => {
       }
     }
 
-    const problem = await Problem.findByIdAndUpdate(
-      id,
+    const problem = await Problem.findOneAndUpdate(
+      { _id: id, userId: req.userId },
       updateData,
       { new: true }
     );
@@ -749,7 +763,7 @@ router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    const problem = await Problem.findById(id);
+    const problem = await Problem.findOne({ _id: id, userId: req.userId });
 
     if (!problem) {
       return res.status(404).json({ error: 'Problem not found' });
@@ -758,13 +772,14 @@ router.delete('/:id', async (req, res) => {
     // If deleting an anchor problem, also delete all its repetition entries
     if (problem.type === 'anchor') {
       await Problem.deleteMany({
+        userId: req.userId,
         type: 'repetition',
         originalProblemId: problem._id
       });
     }
 
     // Delete the problem
-    await Problem.findByIdAndDelete(id);
+    await Problem.findOneAndDelete({ _id: id, userId: req.userId });
 
     // Clear caches since problem was deleted
     clearCalendarCache();

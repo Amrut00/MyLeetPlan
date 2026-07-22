@@ -8,7 +8,7 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     // Get all problems user has solved
-    const solvedProblems = await Problem.find({ isCompleted: true });
+    const solvedProblems = await Problem.find({ userId: req.userId, isCompleted: true });
     const solvedProblemNumbers = solvedProblems.map(p => p.problemNumber);
     
     // Get today's topic from practice plan or dashboard
@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
       const PracticePlan = (await import('../models/PracticePlan.js')).default;
       const { getTodayDayOfWeek } = await import('../utils/dayUtils.js');
       const dayOfWeek = getTodayDayOfWeek();
-      const practicePlan = await PracticePlan.findOne({ dayOfWeek });
+      const practicePlan = await PracticePlan.findOne({ userId: req.userId, dayOfWeek });
       
       if (practicePlan) {
         todayTopic = practicePlan.anchorTopic; // Use anchor topic for recommendations

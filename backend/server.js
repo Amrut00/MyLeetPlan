@@ -8,6 +8,8 @@ import statsRoutes from './routes/stats.js';
 import leetcodeRoutes from './routes/leetcode.js';
 import practicePlanRoutes from './routes/practicePlan.js';
 import recommendationRoutes from './routes/recommendations.js';
+import authRoutes from './routes/auth.js';
+import auth from './middleware/auth.js';
 
 dotenv.config();
 
@@ -27,6 +29,12 @@ process.on('uncaughtException', (error) => {
 if (!process.env.MONGODB_URI) {
   console.error('❌ ERROR: MONGODB_URI is not defined in .env file');
   console.error('Please create a .env file in the backend directory with your MongoDB connection string.');
+  process.exit(1);
+}
+
+if (!process.env.JWT_SECRET) {
+  console.error('❌ ERROR: JWT_SECRET is not defined in .env file');
+  console.error('Please add a JWT_SECRET (a long random string) to your backend .env file.');
   process.exit(1);
 }
 
@@ -98,13 +106,30 @@ async function start() {
     console.log('✅ Connected to MongoDB Atlas');
     console.log(`📊 Database: ${mongoose.connection.name}`);
 
-    // Routes
-    app.use('/api/problems', problemRoutes);
-    app.use('/api/daily', dailyRoutes);
-    app.use('/api/stats', statsRoutes);
-    app.use('/api/leetcode', leetcodeRoutes);
-    app.use('/api/practice-plan', practicePlanRoutes);
-    app.use('/api/recommendations', recommendationRoutes);
+    // One-time cleanup for the multi-user migration:
+    // Drop the obsolete global unique index on PracticePlan.dayOfWeek if it still
+    // exists. It has been replaced by a compound unique index { userId, dayOfWeek }.
+    // Leaving it in place would prevent multiple users from having the same day.
+    try {
+      const ppIndexes = await mongoose.connection.collection('practiceplans').indexes();
+      if (ppIndexes.some((idx) => idx.name === 'dayOfWeek_1')) {
+        await mongoose.connection.collection('practiceplans').dropIndex('dayOfWeek_1');
+        console.log('🧹 Dropped obsolete practiceplans index: dayOfWeek_1');
+      }
+    } catch (err) {
+      console.warn('⚠️ Could not check/drop obsolete dayOfWeek_1 index:', err.message);
+    }
+
+    // Public routes (no authentication required)
+    app.use('/api/auth', authRoutes);
+    app.use('/api/leetcode', leetcodeRoutes); // stateless proxy to LeetCode
+
+    // Protected routes (require a valid JWT; auth middleware sets req.userId)
+    app.use('/api/problems', auth, problemRoutes);
+    app.use('/api/daily', auth, dailyRoutes);
+    app.use('/api/stats', auth, statsRoutes);
+    app.use('/api/practice-plan', auth, practicePlanRoutes);
+    app.use('/api/recommendations', auth, recommendationRoutes);
 
     // Health check (reports DB readiness)
     app.get('/api/health', (req, res) => {

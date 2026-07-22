@@ -6,7 +6,7 @@ const router = express.Router();
 // Get all practice plan entries
 router.get('/', async (req, res) => {
   try {
-    const plans = await PracticePlan.find().sort({ dayOfWeek: 1 });
+    const plans = await PracticePlan.find({ userId: req.userId }).sort({ dayOfWeek: 1 });
     res.json(plans);
   } catch (error) {
     console.error('Error fetching practice plan:', error);
@@ -22,7 +22,7 @@ router.get('/day/:dayOfWeek', async (req, res) => {
       return res.status(400).json({ error: 'Invalid day of week. Must be 0-6 (0=Sunday, 6=Saturday)' });
     }
 
-    const plan = await PracticePlan.findOne({ dayOfWeek });
+    const plan = await PracticePlan.findOne({ userId: req.userId, dayOfWeek });
     if (!plan) {
       return res.status(404).json({ error: 'Practice plan not found for this day' });
     }
@@ -57,8 +57,9 @@ router.post('/', async (req, res) => {
 
     // Use upsert to create or update
     const plan = await PracticePlan.findOneAndUpdate(
-      { dayOfWeek },
+      { userId: req.userId, dayOfWeek },
       {
+        userId: req.userId,
         dayOfWeek,
         anchorTopic: anchorTopic.trim(),
         repetitionTopic: repetitionTopic.trim()
@@ -90,8 +91,8 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Repetition topic is required' });
     }
 
-    const plan = await PracticePlan.findByIdAndUpdate(
-      req.params.id,
+    const plan = await PracticePlan.findOneAndUpdate(
+      { _id: req.params.id, userId: req.userId },
       {
         anchorTopic: anchorTopic.trim(),
         repetitionTopic: repetitionTopic.trim()
@@ -113,7 +114,7 @@ router.put('/:id', async (req, res) => {
 // Delete practice plan entry
 router.delete('/:id', async (req, res) => {
   try {
-    const plan = await PracticePlan.findByIdAndDelete(req.params.id);
+    const plan = await PracticePlan.findOneAndDelete({ _id: req.params.id, userId: req.userId });
     if (!plan) {
       return res.status(404).json({ error: 'Practice plan not found' });
     }
@@ -127,9 +128,9 @@ router.delete('/:id', async (req, res) => {
 // Initialize default practice plan (if no plans exist)
 router.post('/initialize', async (req, res) => {
   try {
-    const existingPlans = await PracticePlan.countDocuments();
+    const existingPlans = await PracticePlan.countDocuments({ userId: req.userId });
     if (existingPlans > 0) {
-      return res.json({ message: 'Practice plan already exists', plans: await PracticePlan.find().sort({ dayOfWeek: 1 }) });
+      return res.json({ message: 'Practice plan already exists', plans: await PracticePlan.find({ userId: req.userId }).sort({ dayOfWeek: 1 }) });
     }
 
     const defaultPlan = [
@@ -142,7 +143,9 @@ router.post('/initialize', async (req, res) => {
       { dayOfWeek: 6, anchorTopic: 'Trees (Basics)', repetitionTopic: 'Sliding Window' }
     ];
 
-    const plans = await PracticePlan.insertMany(defaultPlan);
+    const plans = await PracticePlan.insertMany(
+      defaultPlan.map(day => ({ ...day, userId: req.userId }))
+    );
     res.json({ message: 'Default practice plan initialized', plans });
   } catch (error) {
     console.error('Error initializing practice plan:', error);

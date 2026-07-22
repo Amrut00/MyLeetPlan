@@ -2,9 +2,12 @@ import { useEffect, useState } from 'react';
 import { Toaster } from 'react-hot-toast';
 import Dashboard from './components/Dashboard';
 import NotFound404 from './components/NotFound404';
+import AuthScreen from './components/AuthScreen';
+import { useAuth } from './context/AuthContext';
 import './App.css'
 
 function App() {
+  const { isAuthenticated, loading } = useAuth();
   const [is404, setIs404] = useState(false);
 
   useEffect(() => {
@@ -32,10 +35,26 @@ function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  // While verifying an existing session, show a minimal loading screen
+  let content;
+  if (loading) {
+    content = (
+      <div className="min-h-screen bg-dark-bg flex items-center justify-center">
+        <div className="w-12 h-12 rounded-full border-4 border-indigo-700/20 border-t-indigo-400 animate-spin" />
+      </div>
+    );
+  } else if (!isAuthenticated) {
+    content = <AuthScreen />;
+  } else if (is404) {
+    content = <NotFound404 />;
+  } else {
+    content = <Dashboard />;
+  }
+
   return (
     <>
-      {is404 ? <NotFound404 /> : <Dashboard />}
-      <Toaster 
+      {content}
+      <Toaster
         position="top-right"
         toastOptions={{
           duration: 3000,

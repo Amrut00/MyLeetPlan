@@ -1,21 +1,25 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import Problem from '../models/Problem.js';
 import { getDateNDaysFromToday, formatDate } from '../utils/dayUtils.js';
 
 const router = express.Router();
 
-// Simple in-memory cache for statistics
-let statsCache = null;
-let statsCacheTime = null;
+// Per-user in-memory cache for statistics (keyed by userId)
+const statsCache = new Map(); // userId -> { data, time }
 const STATS_CACHE_TTL = 30000; // 30 seconds cache
 
 // Get statistics
 router.get('/', async (req, res) => {
   try {
+    const userId = req.userId;
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+
     // Check cache first
     const now = Date.now();
-    if (statsCache && statsCacheTime && (now - statsCacheTime) < STATS_CACHE_TTL) {
-      return res.json(statsCache);
+    const cached = statsCache.get(userId);
+    if (cached && (now - cached.time) < STATS_CACHE_TTL) {
+      return res.json(cached.data);
     }
 
     // Use UTC as the single source of truth (matches database timestamps)
@@ -42,13 +46,14 @@ router.get('/', async (req, res) => {
       todayRepetitionCount
     ] = await Promise.all([
     // Total problems
-      Problem.countDocuments(),
-      
+      Problem.countDocuments({ userId }),
+
       // Completed problems
-      Problem.countDocuments({ isCompleted: true }),
+      Problem.countDocuments({ userId, isCompleted: true }),
 
     // Problems by difficulty
       Problem.aggregate([
+      { $match: { userId: userObjectId } },
       {
         $group: {
           _id: '$difficulty',
@@ -62,6 +67,7 @@ router.get('/', async (req, res) => {
 
     // Problems by topic
       Problem.aggregate([
+      { $match: { userId: userObjectId } },
       {
         $group: {
           _id: '$topic',
@@ -80,6 +86,7 @@ router.get('/', async (req, res) => {
         return Problem.aggregate([
       {
         $match: {
+              userId: userObjectId,
               type: 'anchor',
           completedDate: { $gte: thirtyDaysAgo },
           isCompleted: true
@@ -99,6 +106,7 @@ router.get('/', async (req, res) => {
       Problem.aggregate([
         {
           $match: {
+            userId: userObjectId,
             type: 'anchor',
             completedDate: { $gte: startDateUTC },
         isCompleted: true
@@ -116,6 +124,7 @@ router.get('/', async (req, res) => {
       Problem.aggregate([
         {
           $match: {
+            userId: userObjectId,
             type: 'repetition',
             repetitionCompletedDate: { $gte: startDateUTC },
           isCompleted: true
@@ -137,6 +146,7 @@ router.get('/', async (req, res) => {
         weekStartUTC.setUTCDate(todayStartUTC.getUTCDate() - daysSinceMonday);
     weekStartUTC.setUTCHours(0, 0, 0, 0);
         return Problem.countDocuments({
+          userId,
           type: 'anchor',
       completedDate: { $gte: weekStartUTC },
       isCompleted: true
@@ -151,6 +161,7 @@ router.get('/', async (req, res) => {
         weekStartUTC.setUTCDate(todayStartUTC.getUTCDate() - daysSinceMonday);
         weekStartUTC.setUTCHours(0, 0, 0, 0);
         return Problem.countDocuments({
+          userId,
           type: 'repetition',
           repetitionCompletedDate: { $gte: weekStartUTC },
           isCompleted: true
@@ -162,6 +173,7 @@ router.get('/', async (req, res) => {
     const todayEndUTC = new Date(todayStartUTC);
     todayEndUTC.setUTCHours(23, 59, 59, 999);
         return Problem.countDocuments({
+          userId,
           type: 'anchor',
       completedDate: {
         $gte: todayStartUTC,
@@ -176,6 +188,7 @@ router.get('/', async (req, res) => {
         const todayEndUTC = new Date(todayStartUTC);
         todayEndUTC.setUTCHours(23, 59, 59, 999);
         return Problem.countDocuments({
+          userId,
           type: 'repetition',
           repetitionCompletedDate: {
             $gte: todayStartUTC,
@@ -255,9 +268,8 @@ router.get('/', async (req, res) => {
       todaySolvedCount
     };
 
-    // Cache the result
-    statsCache = result;
-    statsCacheTime = now;
+    // Cache the result for this user
+    statsCache.set(userId, { data: result, time: now });
 
     res.json(result);
   } catch (error) {
@@ -266,27 +278,29 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Clear statistics cache (call this when problems are updated)
+// Clear statistics cache (call this when problems are updated).
+// Clears all users' entries — correct and cheap given the short TTL.
 const clearStatsCache = () => {
-  statsCache = null;
-  statsCacheTime = null;
+  statsCache.clear();
 };
 
 // Export for use in other routes
 export { clearStatsCache };
 
-// Simple in-memory cache for calendar data
-let calendarCache = null;
-let calendarCacheTime = null;
+// Per-user in-memory cache for calendar data (keyed by userId)
+const calendarCache = new Map(); // userId -> { data, time }
 const CALENDAR_CACHE_TTL = 30000; // 30 seconds cache
 
 // Get calendar data (problem counts by date)
 router.get('/calendar', async (req, res) => {
   try {
+    const userId = req.userId;
+
     // Check cache first
     const now = Date.now();
-    if (calendarCache && calendarCacheTime && (now - calendarCacheTime) < CALENDAR_CACHE_TTL) {
-      return res.json(calendarCache);
+    const cached = calendarCache.get(userId);
+    if (cached && (now - cached.time) < CALENDAR_CACHE_TTL) {
+      return res.json(cached.data);
     }
 
     // Use UTC for calendar grouping to match database timestamps exactly
@@ -302,20 +316,23 @@ router.get('/calendar', async (req, res) => {
     const [anchorProblems, repetitionProblems, addedProblems] = await Promise.all([
       // Get all completed anchor problems in date range
       Problem.find({
+        userId,
         type: 'anchor',
           completedDate: { $gte: startDateUTC },
           isCompleted: true
       }).select('completedDate').lean(),
-      
+
       // Get all completed repetition problems in date range
       Problem.find({
+        userId,
         type: 'repetition',
         repetitionCompletedDate: { $gte: startDateUTC },
         isCompleted: true
       }).select('repetitionCompletedDate').lean(),
-      
+
       // Get all problems added in date range
       Problem.find({
+          userId,
           $or: [
             { createdAt: { $gte: startDateUTC } },
             { addedDate: { $gte: startDateUTC } }
@@ -428,9 +445,8 @@ router.get('/calendar', async (req, res) => {
       cursor.setUTCDate(cursor.getUTCDate() + 1);
     }
 
-    // Cache the result
-    calendarCache = result;
-    calendarCacheTime = now;
+    // Cache the result for this user
+    calendarCache.set(userId, { data: result, time: now });
 
     res.json(result);
   } catch (error) {
@@ -439,10 +455,10 @@ router.get('/calendar', async (req, res) => {
   }
 });
 
-// Clear calendar cache (call this when problems are updated)
+// Clear calendar cache (call this when problems are updated).
+// Clears all users' entries — correct and cheap given the short TTL.
 const clearCalendarCache = () => {
-  calendarCache = null;
-  calendarCacheTime = null;
+  calendarCache.clear();
 };
 
 // Export for use in other routes

@@ -10,16 +10,52 @@ const api = axios.create({
   timeout: 30000, // 30 second timeout
 });
 
-// Add response interceptor to handle errors gracefully
+const TOKEN_KEY = 'myleetplan_token';
+
+export const getToken = () => localStorage.getItem(TOKEN_KEY);
+export const setToken = (token) => localStorage.setItem(TOKEN_KEY, token);
+export const clearToken = () => localStorage.removeItem(TOKEN_KEY);
+
+// Attach the auth token (if any) to every outgoing request
+api.interceptors.request.use((config) => {
+  const token = getToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Handle errors gracefully; on 401 clear the token and notify the app to log out
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.code === 'ECONNREFUSED' || error.message.includes('Network Error')) {
       console.error('Backend server is not responding. Please check if the server is running.');
     }
+    if (error.response && error.response.status === 401) {
+      clearToken();
+      // Let AuthContext react (show login) without a hard reload
+      window.dispatchEvent(new Event('auth:unauthorized'));
+    }
     return Promise.reject(error);
   }
 );
+
+// Auth API
+export const registerUser = async (email, password, name = '') => {
+  const response = await api.post('/auth/register', { email, password, name });
+  return response.data; // { token, user }
+};
+
+export const loginUser = async (email, password) => {
+  const response = await api.post('/auth/login', { email, password });
+  return response.data; // { token, user }
+};
+
+export const getCurrentUser = async () => {
+  const response = await api.get('/auth/me');
+  return response.data.user;
+};
 
 // Dashboard API
 export const getDashboard = async () => {

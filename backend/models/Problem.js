@@ -1,6 +1,12 @@
 import mongoose from 'mongoose';
 
 const problemSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    index: true
+  },
   problemNumber: {
     type: String,
     required: true,
@@ -121,27 +127,26 @@ const problemSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for efficient queries
-problemSchema.index({ repetitionDate: 1, isCompleted: 1 });
-problemSchema.index({ addedDate: 1, topic: 1 });
-problemSchema.index({ problemNumber: 1 }); // For duplicate detection
-// FIX: Add composite indexes for better query performance
-problemSchema.index({ repetitionDate: 1, topic: 1, isCompleted: 1 }); // For repetition queries
-problemSchema.index({ addedDate: 1, topic: 1, type: 1 }); // For repetition queries with addedDate
-problemSchema.index({ problemNumber: 1, solveCount: -1 }); // For solve count queries
-problemSchema.index({ originalProblemId: 1, type: 1 }); // For finding repetitions of a problem
-problemSchema.index({ type: 1, repetitionDate: 1, isCompleted: 1 }); // For repetition queries
+// Indexes for efficient per-user queries (all prefixed with userId)
+problemSchema.index({ userId: 1, repetitionDate: 1, isCompleted: 1 });
+problemSchema.index({ userId: 1, addedDate: 1, topic: 1 });
+problemSchema.index({ userId: 1, problemNumber: 1 }); // For duplicate detection
+problemSchema.index({ userId: 1, repetitionDate: 1, topic: 1, isCompleted: 1 }); // For repetition queries
+problemSchema.index({ userId: 1, addedDate: 1, topic: 1, type: 1 }); // For repetition queries with addedDate
+problemSchema.index({ userId: 1, problemNumber: 1, solveCount: -1 }); // For solve count queries
+problemSchema.index({ userId: 1, originalProblemId: 1, type: 1 }); // For finding repetitions of a problem
+problemSchema.index({ userId: 1, type: 1, repetitionDate: 1, isCompleted: 1 }); // For repetition queries
 
 // Optimized indexes for calendar queries
-problemSchema.index({ type: 1, completedDate: 1, isCompleted: 1 }); // For anchor completions in calendar
-problemSchema.index({ type: 1, repetitionCompletedDate: 1, isCompleted: 1 }); // For repetition completions in calendar
-problemSchema.index({ createdAt: 1 }); // For problems added query
-problemSchema.index({ addedDate: 1 }); // For problems added query (fallback)
+problemSchema.index({ userId: 1, type: 1, completedDate: 1, isCompleted: 1 }); // For anchor completions in calendar
+problemSchema.index({ userId: 1, type: 1, repetitionCompletedDate: 1, isCompleted: 1 }); // For repetition completions in calendar
+problemSchema.index({ userId: 1, createdAt: 1 }); // For problems added query
+problemSchema.index({ userId: 1, addedDate: 1 }); // For problems added query (fallback)
 
 // Smart Repetition System indexes
-problemSchema.index({ scheduledRepetitionDate: 1, topic: 1, type: 1 }); // For topic-aware repetition queries
-problemSchema.index({ topic: 1, scheduledRepetitionDate: 1, isCompleted: 1 }); // For daily repetition selection
-problemSchema.index({ masteryLevel: 1, scheduledRepetitionDate: 1 }); // For priority-based selection
+problemSchema.index({ userId: 1, scheduledRepetitionDate: 1, topic: 1, type: 1 }); // For topic-aware repetition queries
+problemSchema.index({ userId: 1, topic: 1, scheduledRepetitionDate: 1, isCompleted: 1 }); // For daily repetition selection
+problemSchema.index({ userId: 1, masteryLevel: 1, scheduledRepetitionDate: 1 }); // For priority-based selection
 
 const Problem = mongoose.model('Problem', problemSchema);
 

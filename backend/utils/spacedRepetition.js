@@ -34,15 +34,15 @@ export function calculateInterval(solveCount, difficulty) {
  * @param {Date} fromDate - Start searching from this date
  * @returns {Promise<Date>} Next date when topic is repetition topic
  */
-export async function findNextTopicDay(problemTopic, fromDate) {
+export async function findNextTopicDay(problemTopic, fromDate, userId) {
   // Import here to avoid circular dependency
   const PracticePlan = (await import('../models/PracticePlan.js')).default;
-  
+
   const startDate = new Date(fromDate);
   startDate.setUTCHours(0, 0, 0, 0);
-  
-  // Get all practice plans
-  const plans = await PracticePlan.find().sort({ dayOfWeek: 1 });
+
+  // Get all practice plans for this user
+  const plans = await PracticePlan.find({ userId }).sort({ dayOfWeek: 1 });
   
   if (plans.length === 0) {
     // No practice plan, fallback to 3 days from fromDate
@@ -166,14 +166,14 @@ export function calculatePriorityScore(problem, today) {
  * @param {number} weeksAhead - Number of weeks to look ahead
  * @returns {Promise<Date[]>} Array of dates when topic is repetition topic
  */
-export async function getNextTopicDays(topic, weeksAhead = 4) {
+export async function getNextTopicDays(topic, weeksAhead = 4, userId) {
   const PracticePlan = (await import('../models/PracticePlan.js')).default;
   const topicDays = [];
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
-  
-  // Get all practice plans
-  const plans = await PracticePlan.find().sort({ dayOfWeek: 1 });
+
+  // Get all practice plans for this user
+  const plans = await PracticePlan.find({ userId }).sort({ dayOfWeek: 1 });
   
   if (plans.length === 0) {
     // No practice plan, return empty array
@@ -209,11 +209,11 @@ export async function getNextTopicDays(topic, weeksAhead = 4) {
  * @param {string} topic - Topic of the problems
  * @returns {Promise<void>}
  */
-export async function distributeUnselectedProblems(unselectedProblems, topic) {
+export async function distributeUnselectedProblems(unselectedProblems, topic, userId) {
   if (unselectedProblems.length === 0) return;
-  
+
   const Problem = (await import('../models/Problem.js')).default;
-  const nextTopicDays = await getNextTopicDays(topic, 4); // 4 weeks ahead
+  const nextTopicDays = await getNextTopicDays(topic, 4, userId); // 4 weeks ahead
   
   if (nextTopicDays.length === 0) {
     // No topic days found, distribute evenly over next 28 days
@@ -252,29 +252,31 @@ export async function distributeUnselectedProblems(unselectedProblems, topic) {
  * @param {number} maxDaily - Maximum number of repetitions per day (default: 5)
  * @returns {Promise<Object>} { selected: Problem[], unselected: Array }
  */
-export async function selectDailyRepetitions(topic, today, maxDaily = 5) {
+export async function selectDailyRepetitions(topic, today, maxDaily = 5, userId) {
   const Problem = (await import('../models/Problem.js')).default;
-  
+
   const todayStart = new Date(today);
   todayStart.setUTCHours(0, 0, 0, 0);
   const todayEnd = new Date(todayStart);
   todayEnd.setUTCHours(23, 59, 59, 999);
-  
+
   // Get existing repetition entries for today to exclude them
   const todayRepetitionIds = await Problem.find({
+    userId,
     type: 'repetition',
     $or: [
       { repetitionDate: { $gte: todayStart, $lt: todayEnd } },
       { scheduledRepetitionDate: { $gte: todayStart, $lt: todayEnd } }
     ]
   }).select('originalProblemId').lean();
-  
+
   const excludedAnchorIds = todayRepetitionIds
     .map(r => r.originalProblemId)
     .filter(id => id !== null && id !== undefined);
-  
+
   // Build query - handle empty excludedAnchorIds array
   const query = {
+    userId,
     type: 'anchor',
     topic: topic,
     $or: [

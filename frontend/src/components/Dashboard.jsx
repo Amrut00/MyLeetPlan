@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { getDashboard, addProblems, markProblemComplete } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import TodayProblems from './TodayProblems';
 import RepetitionSection from './RepetitionSection';
 import BacklogSection from './BacklogSection';
@@ -19,10 +20,12 @@ import {
   HiOutlineChartBar,
   HiOutlineSparkles,
   HiOutlineBars3,
-  HiOutlineXMark
+  HiOutlineXMark,
+  HiOutlineArrowRightOnRectangle
 } from 'react-icons/hi2';
 
 function Dashboard() {
+  const { user, logout } = useAuth();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -296,6 +299,19 @@ function Dashboard() {
                 </div>
               </div>
             </div>
+
+            {/* Logout - Desktop far right */}
+            <div className="hidden sm:flex flex-shrink-0 items-center">
+              <button
+                type="button"
+                onClick={logout}
+                title={user?.email ? `Sign out (${user.email})` : 'Sign out'}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-dark-text-secondary hover:text-white hover:bg-dark-bg-tertiary border border-dark-border transition"
+              >
+                <HiOutlineArrowRightOnRectangle className="w-5 h-5" />
+                <span className="hidden lg:inline">Logout</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -361,6 +377,13 @@ function Dashboard() {
             >
               <HiOutlineSparkles className={`w-5 h-5 ${view === 'plan' ? 'text-blue-500' : ''}`} />
               <span className={view === 'plan' ? 'bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent' : ''}>Practice Plan</span>
+            </button>
+            <button
+              onClick={() => { setIsMobileMenuOpen(false); logout(); }}
+              className="w-full text-left px-3 py-2 rounded-lg transition-all duration-200 font-medium text-sm flex items-center gap-2 border border-dark-border hover:bg-dark-bg-hover text-dark-text-secondary hover:text-dark-text"
+            >
+              <HiOutlineArrowRightOnRectangle className="w-5 h-5" />
+              <span>Logout</span>
             </button>
           </nav>
           {/* Date/Time - Footer of Sidebar */}

@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import Problem from '../models/Problem.js';
 import PracticePlan from '../models/PracticePlan.js';
 import { getTodayTopics, getDateNDaysFromToday, formatDate, getTodayDayOfWeek } from '../utils/dayUtils.js';
@@ -13,10 +14,13 @@ const router = express.Router();
 // Get today's dashboard data
 router.get('/dashboard', async (req, res) => {
   try {
+    const userId = req.userId;
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+
     // Try to get practice plan from database, fallback to default
     let todayTopics;
     const dayOfWeek = getTodayDayOfWeek();
-    const practicePlan = await PracticePlan.findOne({ dayOfWeek });
+    const practicePlan = await PracticePlan.findOne({ userId, dayOfWeek });
     
     if (practicePlan) {
       todayTopics = {
@@ -44,7 +48,8 @@ router.get('/dashboard', async (req, res) => {
     const { selected, unselected } = await selectDailyRepetitions(
       repetitionTopic,
       todayStartUTC,
-      DAILY_REPETITION_LIMIT
+      DAILY_REPETITION_LIMIT,
+      userId
     );
     
     // Create repetition entries for selected problems (with strict duplicate prevention)
@@ -56,6 +61,7 @@ router.get('/dashboard', async (req, res) => {
       // Check if ANY incomplete repetition entry exists for this anchor problem
       // This prevents creating duplicates across all dates
       const existingRepetitions = await Problem.find({
+        userId,
         type: 'repetition',
         originalProblemId: anchorProblem._id,
         isCompleted: false
@@ -67,7 +73,7 @@ router.get('/dashboard', async (req, res) => {
         const toDelete = existingRepetitions.slice(1);
         const idsToDelete = toDelete.map(r => r._id);
         
-        await Problem.deleteMany({ _id: { $in: idsToDelete } });
+        await Problem.deleteMany({ userId, _id: { $in: idsToDelete } });
         duplicateCleanedCount += toDelete.length;
         
         // Use the kept entry as the existing one
@@ -100,6 +106,7 @@ router.get('/dashboard', async (req, res) => {
       } else {
         // No existing entry - create one
         await Problem.create({
+          userId,
           problemNumber: anchorProblem.problemNumber,
           problemSlug: anchorProblem.problemSlug,
           problemTitle: anchorProblem.problemTitle,
@@ -128,6 +135,7 @@ router.get('/dashboard', async (req, res) => {
     const todayDuplicateCheck = await Problem.aggregate([
       {
         $match: {
+          userId: userObjectId,
           type: 'repetition',
           createdAt: { $gte: todayStartUTC, $lt: tomorrow }
         }
@@ -157,12 +165,13 @@ router.get('/dashboard', async (req, res) => {
 
     // Distribute unselected problems to future topic days
     if (unselected.length > 0) {
-      await distributeUnselectedProblems(unselected, repetitionTopic);
+      await distributeUnselectedProblems(unselected, repetitionTopic, userId);
     }
-    
+
     // Find repetition problems: ONLY repetition type entries where date is TODAY
     // First, get all to check if we exceed the limit
     const allTodayRepetitions = await Problem.find({
+      userId,
       type: 'repetition',
       topic: repetitionTopic, // Only show today's topic
       $or: [
@@ -176,7 +185,7 @@ router.get('/dashboard', async (req, res) => {
     // If we have more than the limit, redistribute excess to future dates
     if (allTodayRepetitions.length > DAILY_REPETITION_LIMIT) {
       const excess = allTodayRepetitions.slice(DAILY_REPETITION_LIMIT);
-      const nextTopicDays = await getNextTopicDays(repetitionTopic, 4);
+      const nextTopicDays = await getNextTopicDays(repetitionTopic, 4, userId);
       
       if (nextTopicDays.length > 0) {
         const problemsPerDay = Math.ceil(excess.length / nextTopicDays.length);
@@ -200,6 +209,7 @@ router.get('/dashboard', async (req, res) => {
     // Show all overdue problems regardless of topic (not just today's topic)
     // IMPORTANT: Deduplicate by originalProblemId to avoid showing multiple entries for same anchor
     const allBacklogProblems = await Problem.find({
+      userId,
       type: 'repetition',
       $or: [
         { scheduledRepetitionDate: { $lt: todayStartUTC } },
@@ -250,6 +260,7 @@ router.get('/dashboard', async (req, res) => {
     const backlogDuplicateCheck = await Problem.aggregate([
       {
         $match: {
+          userId: userObjectId,
           type: 'repetition',
           $or: [
             { scheduledRepetitionDate: { $lt: todayStartUTC } },
@@ -285,6 +296,7 @@ router.get('/dashboard', async (req, res) => {
 
     // Get count of problems added today (ONLY anchor problems, not repetition entries)
     const todayAddedCount = await Problem.countDocuments({
+      userId,
       type: 'anchor', // Only count anchor problems as "added"
       createdAt: {
         $gte: todayStartUTC,
@@ -295,6 +307,7 @@ router.get('/dashboard', async (req, res) => {
     // Get count of problems solved today (includes both anchor and repetition problems)
     // Count anchor problems completed today + repetition problems completed today
     const todaySolvedAnchorCount = await Problem.countDocuments({
+      userId,
       type: 'anchor',
       completedDate: {
         $gte: todayStartUTC,
@@ -302,8 +315,9 @@ router.get('/dashboard', async (req, res) => {
       },
       isCompleted: true
     });
-    
+
     const todaySolvedRepetitionCount = await Problem.countDocuments({
+      userId,
       type: 'repetition',
       repetitionCompletedDate: {
         $gte: todayStartUTC,
