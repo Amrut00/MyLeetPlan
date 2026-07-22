@@ -179,6 +179,12 @@ Each problem includes:
 
 ### 💡 Additional Features
 
+#### New-User Onboarding
+- **Welcome tour**: a multi-step modal that auto-shows once for each new user, walking through the daily anchor/repetition workflow, practice plan, and progress tracking
+- **Guide tab**: a permanent "Guide" tab in the navbar with a full how-it-works page, revisitable anytime
+- **Replay**: the welcome tour can be replayed from the Guide page
+- Shown only once per account (tracked per-user in the browser)
+
 #### Daily Motivation
 - Personalized motivational messages
 - Changes daily to keep you motivated
@@ -317,7 +323,8 @@ Each problem includes:
 3. Configure Groq API key (optional) for AI recommendations
 4. Start backend server: `npm start` in `backend/` directory
 5. Start frontend: `npm run dev` in `frontend/` directory
-6. Register an account, then start adding problems and tracking your progress!
+6. Register an account — a welcome tour walks you through the app on first login (revisit it anytime from the **Guide** tab)
+7. Start adding problems and tracking your progress!
 
 ## 👥 Multi-User
 
